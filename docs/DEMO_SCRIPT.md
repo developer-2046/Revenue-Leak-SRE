@@ -1,33 +1,33 @@
-# 10-Minute Demo Script
+# The "Revenue Incident Command" Demo Script (10 Mins)
 
-**Narrative**: "Revenue Leak SRE turns your RevOps team into engineers who strictly monitor and fix revenue reliability."
+**Narrative**: "Sales Leaders don't need more charts. They need a Site Reliability Engineer for their Revenue."
 
-## Part 1: The Problem (2 mins)
-1.  **Open Dashboard**: Start with a blank state.
-2.  **Pitch**: "We treat revenue funnel health like site reliability. Just as downtime kills products, 'revenue downtime'—like stale deals and dropped leads—kills growth."
-3.  **Concept**: "We introduce Error Budgets for Sales. If you ignore leads, you burn your budget."
+## Part 1: The Setup (2 mins)
+1.  **Open Empty Dashboard**: "This is the calm before the storm. Right now, we're monitoring the funnel."
+2.  **Pitch SLOs**: "We set a Service Level Objective: 30 minutes to lead response. 7 Days for Deal Velocity."
 
-## Part 2: Deterministic Demo (3 mins)
-1.  **Click "Run Full Demo"** (Purple Button).
-    -   *Say*: "Let's simulate a standard Monday morning scan."
-2.  **Observe**:
-    -   Data loads instantly.
-    -   Scan runs.
-    -   **Reliability Panel** appears: "Look at the Error Budget. We have 10% budget, but we've burned it down to X% due to slow lead response."
-3.  **Top Breaches**: "Here are the top 5 deals bleeding value right now."
+## Part 2: The Incident (3 mins)
+1.  **Action**: Click **"RUN FULL DEMO"**.
+2.  **Visual**: The **War Room** activates.
+    -   **Title**: "Active Revenue Incident (SEV 1)" flashes.
+    -   **Sound/Motion**: (Simulated via visuals) "We just detected $200k at risk. Burn Rate is 300%."
+3.  **Explain Error Budget**: "We have a $50k monthly loss tolerance. We just burned through it in 5 seconds."
 
-## Part 3: The Fix (3 mins)
-1.  **Click the Top Issue**: (Likely "Nakatomi Deal" or "Sarah Connor").
-2.  **Review Drawer**:
-    -   "We see $150k at risk."
-    -   "The 'Fix Pack' is auto-generated."
-3.  **Preview Fix**:
-    -   "Before applying, we see a diff. We are changing ownership to 'Antigravity' and resetting the SLA clock."
-4.  **Click "Approve & Apply"**.
-    -   *Action*: Toast appears "Success! Slack alert sent."
-    -   *Show Audit Log*: Scroll down to the bottom panel. "Every action is immutable and logged."
+## Part 3: The Investigation (2 mins)
+1.  **Top Causes**: "Look at the blast radius. It's mostly Stale Deals in North America."
+2.  **Trace**: Scroll the **Timeline Panel**. "Detected at 10:00 AM. 50 records affected."
 
-## Part 4: Chaos Mode (2 mins)
-1.  **Click "Inject Chaos"** (Orange Button).
-2.  **Scan Again**: "Now we see what happens when 50 bad leads flood the system."
-3.  **Conclusion**: "Revenue Leak SRE doesn't just show charts; it acts. It repairs the funnel automatically to keep your Revenue Error Budget green."
+## Part 4: The Fix (3 mins)
+1.  **Select High Severity Issue**: Click on "Nakatomi Deal ($150k)".
+2.  **Fix Pack Preview**:
+    -   "We don't just email people. We patch the data."
+    -   "Here is the code diff. We are re-assigning ownership and resetting the last touch clock."
+3.  **Action**: Click **"Approve & Apply"**.
+4.  **Reaction**:
+    -   Toast: "Fix Applied."
+    -   **Timeline**: "Fix Applied to Record 103".
+    -   **Budget Widget**: "Burn Rate drops to 0% (Simulated recovery)".
+    -   Incident resolves. "All Systems Nominal."
+
+## Part 5: The "So What?" (Conclusion)
+"You wouldn't run a server without SRE. Why run a $100M revenue engine without it?"

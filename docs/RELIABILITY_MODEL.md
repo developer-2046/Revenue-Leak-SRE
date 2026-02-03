@@ -1,29 +1,36 @@
 # Revenue Reliability Model
 
-## Why Revenue Reliability?
-Traditional SRE teams monitor uptime and latency. GTM SREs monitor **revenue consistency**. 
-We apply Site Reliability Engineering principles to the sales funnel.
+## Core Concepts
 
-## Service Level Objectives (SLOs)
+### 1. Revenue Error Budget
+We define a financial tolerance for operational failure. 
+-   **Default Budget**: $50,000 / month (configurable).
+-   **Usage**: Every dollar "at risk" due to a leak subtracts from this budget.
+-   **Burn Rate**: `Total At Risk / Budget`. 
+    -   Burn Rate = 1.0 means you've exhausted tolerance.
+    -   Burn Rate > 2.0 is a SEV 1 Incident.
 
-We measure two key indicators of funnel health:
+### 2. Paging States
+-   **OK**: Burn Rate < 0.25 (Budget is healthy).
+-   **WARN**: Burn Rate 0.25 - 0.50 (Investigation needed).
+-   **PAGE**: Burn Rate > 0.50 (Immediate intervention required).
 
-### 1. Lead Response Latency
-- **Indicator**: Time from `created_at` to first `last_touch_at`.
-- **Target**: 90% of leads engaged within 1 hour.
-- **Why**: "Speed to lead" is the #1 predictor of conversion.
+### 3. Impact Estimation Model
+We calculate "At Risk" value using a Stage Probability Decay model.
 
-### 2. Opportunity Freshness
-- **Indicator**: Time since `last_touch_at` for open opportunities.
-- **Target**: 90% of open opps touched within the last 10 days.
-- **Why**: Deal momentum kills deals. Silence is a leading indicator of churn.
+-   **Base Probability**:
+    -   New: 10%
+    -   Qualified: 25%
+    -   Proposal: 45%
+    -   Negotiation: 65%
 
-## Error Budgets
-We calculate an "Error Budget" based on the 10% tolerance (1 - 0.90).
-- If your team ignores too many leads, the **Error Budget burns down**.
-- When the budget hits 0, we treat it like a P0 outage: automated alerts go out, and potentially we freeze "new lead distribution" until the backlog is cleared (simulating circuit breakers).
+-   **Staleness Decay**:
+    -   Formula: `P_current = P_base * e^(-k * t)`
+    -   Half-life: 14 days (Probability of winning halves every 2 weeks of silence).
+    
+This provides a mathematically defensible "Dollar Value" for every day of inaction.
 
-## Architecture
-The calculations are performed deterministically in `lib/reliability.ts`.
-- **Input**: Raw `FunnelRecord[]` from CSV.
-- **Output**: `ReliabilityMetrics` (compliance rates, dollar impact, budget burn).
+### 4. SLOs (Service Level Objectives)
+-   **Lead Response**: 30 Minutes.
+-   **Opp Freshness**: 7 Days.
+-   **Data Hygiene**: Key fields (Next Step) populated within 24h.

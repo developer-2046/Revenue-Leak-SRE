@@ -1,17 +1,19 @@
 # Revenue Leak SRE
 
-**Revenue Leak SRE** is a proactive observability and remediation platform for Go-To-Market (GTM) funnels. It applies Site Reliability Engineering (SRE) principles to sales operations, using **SLOs** and **Error Budgets** to ensure no lead is left behind.
+**Revenue Leak SRE** transforms your Go-To-Market (GTM) team into a Reliability Engineering discipline. 
+We treat **revenue leaks** (untouched leads, stale deals) as **incidents** that burn down an **Error Budget**.
 
-## 🚀 60-Second Pitch
-Most revenue teams rely on passive dashboards. Revenue Leak SRE is different:
-1.  **It Monitors Reliability**: Tracks "Revenue Error Budgets" (e.g., Lead Response Time < 1h).
-2.  **It Fixes Itself**: Generates "Fix Packs" (automation payloads) to resolve issues.
-3.  **It Audits Everything**: GitOps-style audit logs for every data change.
+## 🚀 The Vision
+Most RevOps tools are passive dashboards. We are an **Incident Command System**.
+1.  **Define SLOs**: "Leads must be touched in 30m". "Deals cannot sit in Proposal for > 7 days".
+2.  **Monitor Burn Rate**: If your team ignores leads, you burn your Revenue Error Budget.
+3.  **Page the Team**: When burn rate > 50%, we escalate to "Page" status.
+4.  **Auto-Remediate**: We generate **Fix Packs** (automation payloads) to resolve the incident instantly.
 
-## 📸 Screenshots
-*(Placeholders - see live demo)*
--   **Reliability Dashboard**: shows Error Budget burn down.
--   **Fix Pack Preview**: shows Before/After diffs of CRM data.
+## 📸 Capabilities
+-   **War Room**: Real-time view of Active Incidents, Burn Rate, and Impact Blast Radius.
+-   **Fix Packs**: Automated resolution (e.g., "Assign Owner", "Rescue Stale Opp") with `git diff` style previews.
+-   **Audit Log**: Immutable history of every action for compliance.
 
 ## ⚡ Quick Start
 ```bash
@@ -25,30 +27,42 @@ npm run dev
 # Open http://localhost:3000
 ```
 
-## 🎥 5-Minute Demo
-1.  Click **"Run Full Demo"** to load a deterministic scenario.
-2.  Observe the **Error Budget** (Red/Green status).
-3.  Click a **High Severity Leak**.
-4.  Review the **Fix Pack Preview** (Diff view).
-5.  Click **"Approve & Apply"** to execute the fix and log it to the Audit Trail.
+## 🎥 The "Must-Win" Demo
+1.  **Click "RUN FULL DEMO"** (Big Purple Button).
+2.  **War Room Activation**: Watch the dashboard transform into an Incident Command Center.
+    -   **SEV 1 Incident** declared.
+    -   **Budget at Risk** climbs.
+    -   **Paging State** hits "PAGE".
+3.  **Resolve**:
+    -   Click the top issue (Likely "Nakatomi Deal").
+    -   Review the **Fix Pack Preview** (Diff view).
+    -   Click **"Approve & Apply"**.
+4.  **Recovery**:
+    -   Watch the **Timeline** update.
+    -   See the **Error Budget** stabilize.
+    -   Incident resolves.
 
 ## 🏗 Architecture
 ```mermaid
 graph TD
-    User -->|Inbound Data| UI[Next.js Dashboard]
+    User -->|Inbound Data| UI[War Room]
     UI -->|Records| Scanner[Rules Engine]
     Scanner -->|Issues| Reliability[Reliability Model]
-    Reliability -->|SLO Metrics| UI
+    
+    Reliability -->|Burn Rate| Budget[Error Budget]
+    Reliability -->|Paging| Alerts[Paging State]
     
     UI -->|Generate Fix| FixGen[Fix Generator]
     FixGen -->|Proposed Diff| Preview[Fix Preview]
-    Preview -->|Approve| Audit[Audit Log]
-    Audit -->|Execute| Slack[Slack Webhook]
+    Preview -->|Apply Fix| Mutator[Record Mutator]
+    Mutator -->|Update| UI
+    Mutator -->|Log| Audit[Audit Log]
+    Mutator -->|Alert| Slack[Slack Webhook]
 ```
 
-## 🧪 Quality
--   **Tests**: `npm run test` (Vitest)
+## 🧪 Quality Gates
+-   **Tests**: `npm run test` (Vitest covering Logic, Rules, Impact)
 -   **Lint**: `npm run lint`
--   **CI**: GitHub Actions enabled.
+-   **CI**: GitHub Actions workflow enabled.
 
 See [docs/RELIABILITY_MODEL.md](docs/RELIABILITY_MODEL.md) for the math behind the metrics.
