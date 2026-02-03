@@ -8,12 +8,13 @@ import { parseCSV } from '@/lib/csv';
 import { scanForLeaks } from '@/lib/scanner';
 import { calculateImpact } from '@/lib/impact';
 import { generateFixPack } from '@/lib/fix-generator';
-import { FixPackPreview } from '@/components/IssueDrawer'; // We might need to extract this or inline it
 import { ArrowRight, ShieldCheck, AlertTriangle, Microscope, Zap, CheckCircle, Home, Siren } from 'lucide-react';
 import { ImpactedRecord } from '@/lib/fixpack';
 
+import { FixPackStep } from '@/lib/types';
+
 // Duplicate FixPackPreview here to avoid export mess if it wasn't exported
-function FixPackDiff({ record, impactedRecord, steps }: { record: FunnelRecord, impactedRecord: ImpactedRecord, steps: string[] }) {
+function FixPackDiff({ record, impactedRecord, steps }: { record: FunnelRecord, impactedRecord: ImpactedRecord, steps: FixPackStep[] }) {
     if (!impactedRecord || !impactedRecord.changes) return null;
 
     return (
