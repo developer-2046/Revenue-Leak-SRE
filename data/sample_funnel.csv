@@ -1,0 +1,4 @@
+id,type,name,email,domain,company,source,region,owner,stage,created_at,last_touch_at,next_step,value_usd,notes
+1,lead,John Doe,john@acme.com,acme.com,Acme Corp,inbound,NA,Alice,New,2023-10-01T10:00:00Z,,Call,1200,Older lead
+2,opp,Big Deal,ceo@bigcorp.com,bigcorp.com,BigCorp,outbound,NA,Bob,Proposal,2023-09-15T10:00:00Z,2023-09-20T10:00:00Z,Send contract,50000,Stale opp
+3,lead,Jane Smith,jane@start.up,start.up,StartUp Inc,website,EMEA,,New,2023-10-02T12:00:00Z,,,1000,Unassigned
