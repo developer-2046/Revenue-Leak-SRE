@@ -61,18 +61,45 @@ export function generateFixPack(issue: LeakIssue, record: FunnelRecord): FixPack
 
         case 'UNASSIGNED_OWNER':
             pack.title = 'Round Robin Assignment';
-            pack.steps = ['Check territory map.', 'Assign to AE.', 'Notify AE via Slack.'];
+            pack.title = 'Auto-Routing';
+            pack.steps = ['Route to Round Robin'];
             pack.verification_check = 'Owner field is not null.';
+            pack.automation_payload = {
+                record_id: record.id,
+                action_type: 'ASSIGN_OWNER'
+            };
+            break;
+
+        case 'NO_NEXT_STEP':
+            pack.title = 'Enforce Hygiene';
+            pack.steps = ['Set next step to Discovery'];
+            pack.automation_payload = {
+                record_id: record.id,
+                action_type: 'ADD_NEXT_STEP'
+            };
             break;
 
         default:
             pack.title = 'General Data Fix';
             pack.steps = ['Review record manually.', 'Update missing fields.'];
             pack.verification_check = 'Manual review.';
+            pack.slack_message = `🚨 SLA BREACH: ${record.name} from ${record.company} is untouched!`;
+            pack.automation_payload = {
+                flow_name: `Auto-Fix: ${pack.title}`,
+                record_id: record.id,
+                action_type: 'SLA_BREACH_FIX',
+                nodes: [
+                    { type: 'trigger', event: 'on_fix_click' },
+                ]
+            };
+            break;
     }
 
     // Standard Automation Payload (n8n style)
-    if (!pack.automation_payload.nodes) {
+    // This block is now largely superseded by case-specific automation_payloads.
+    // If a case explicitly sets automation_payload, this will not overwrite it.
+    // If a case does NOT set automation_payload, this will still apply.
+    if (!pack.automation_payload.action_type) { // Check for the new action_type to determine if payload was set
         pack.automation_payload = {
             flow_name: `Auto-Fix: ${pack.title}`,
             nodes: [

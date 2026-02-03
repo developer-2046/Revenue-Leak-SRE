@@ -1,9 +1,3 @@
-import { FunnelRecord } from './types';
-import { differenceInDays, differenceInMinutes } from 'date-fns';
-
-export interface SLOConfig {
-    lead_response_time_hours: number;
-    opp_freshness_days: number;
 import { FunnelRecord, PagingState } from './types';
 import { differenceInMinutes, differenceInDays } from 'date-fns';
 import { CONFIG } from './config';
@@ -58,12 +52,11 @@ export function calculateReliabilityMetrics(records: FunnelRecord[], totalAtRisk
     if (burnRate > CONFIG.PAGING_THRESHOLD_PAGE) paging_state = 'PAGE';
     else if (burnRate > CONFIG.PAGING_THRESHOLD_WARN) paging_state = 'WARN';
 
-    // Breaches logic remains similar but simplified return mostly for UI
     return {
         lead_slo_compliance_rate: leadSlo,
         opp_freshness_compliance_rate: oppSlo,
         error_budget_remaining: remaining,
-        top_breaches: [], // Populated by main impact logic usually, kept for compat
+        top_breaches: [],
         paging_state
     };
 }
