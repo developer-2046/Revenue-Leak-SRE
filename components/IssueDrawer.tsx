@@ -18,7 +18,11 @@ export function IssueDrawer({ issue, record, onClose, onRunFix }: IssueDrawerPro
     const [diff, setDiff] = useState<ImpactedRecord | null>(null);
     const [isApplied, setIsApplied] = useState(false);
 
-    if (!issue || !record) return null;
+    if (!issue || !record) {
+        console.log("IssueDrawer: Missing props", { issue, record });
+        return null;
+    }
+    console.log("IssueDrawer: Rendering", { type: issue.issue_type, recordId: record.id });
 
     const handleGenerateValues = () => {
         const pack = generateFixPack(issue, record);

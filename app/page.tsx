@@ -372,7 +372,10 @@ export default function Home() {
                                                         <td className="px-6 py-4 font-mono text-gray-900 font-bold">${issue.estimated_loss_usd?.toLocaleString()}</td>
                                                         <td className="px-6 py-4 text-right">
                                                             <button
-                                                                onClick={() => setSelectedIssueId(issue.issue_id)}
+                                                                onClick={() => {
+                                                                    console.log("Clicked Issue:", issue.issue_id, "Record ID:", issue.record_id);
+                                                                    setSelectedIssueId(issue.issue_id);
+                                                                }}
                                                                 className="text-indigo-600 hover:text-indigo-900 font-bold hover:underline"
                                                             >
                                                                 View Fix
