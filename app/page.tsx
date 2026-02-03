@@ -6,10 +6,12 @@ import { generateSampleData } from '@/lib/sample-data';
 import { parseCSV } from '@/lib/csv';
 import { scanForLeaks } from '@/lib/scanner';
 import { estimateImpact } from '@/lib/estimator';
+import { estimateImpact } from '@/lib/estimator';
 import { calculateReliabilityMetrics, ReliabilityMetrics } from '@/lib/reliability';
-import { Upload, Database, AlertTriangle, ShieldAlert, Zap, Activity, TrendingDown, History } from 'lucide-react';
+import { Upload, Database, AlertTriangle, ShieldAlert, Zap, Activity, TrendingDown, History, PlayCircle } from 'lucide-react';
 import { IssueDrawer } from '@/components/IssueDrawer';
 import { getAuditLog } from '@/lib/audit';
+import Papa from 'papaparse';
 
 export default function Home() {
     const [data, setData] = useState<FunnelRecord[]>([]);
@@ -25,6 +27,39 @@ export default function Home() {
         setData(sample);
         setIssues([]);
         setReliability(null);
+    };
+
+    const handleRunFullDemo = async () => {
+        // 1. Load Deterministic Data
+        const res = await fetch('/demo_funnel.csv'); // We need to move csv to public/ or just import it string-wise if lazy
+        // Since Next.js public folder is easy, let's assume we can fetch it, OR we just inline the string for robustness
+        // For hackathon reliability: Inline variables or hardcode logic.
+        // Let's use a hardcoded set that matches the CSV content to avoid file fetch issues in different envs
+        const demoData: FunnelRecord[] = [
+            { id: '101', type: 'lead', name: 'Sarah Connor', email: 'sarah@sky.net', domain: 'sky.net', company: 'Skynet', source: 'inbound', region: 'NA', owner: null, stage: 'New', created_at: new Date(Date.now() - 3600000 * 2).toISOString(), last_touch_at: null, next_step: null, value_usd: 5000, notes: null },
+            { id: '103', type: 'opp', name: 'Nakatomi Deal', email: 'hans@gruber.com', domain: 'gruber.com', company: 'Nakatomi', source: 'outbound', region: 'NA', owner: 'Alice', stage: 'Negotiation', created_at: new Date(Date.now() - 86400000 * 45).toISOString(), last_touch_at: new Date(Date.now() - 86400000 * 40).toISOString(), next_step: null, value_usd: 150000, notes: null },
+            { id: '105', type: 'lead', name: 'Duplicate Dave', email: 'dave@dupe.com', domain: 'dupe.com', company: 'Dupe Corp', source: 'web', region: 'APAC', owner: 'Charlie', stage: 'New', created_at: new Date().toISOString(), last_touch_at: null, next_step: null, value_usd: 1500, notes: null }
+        ];
+        // Note: For a real file read validation logic I would read the file component-side if uploaded. 
+        // But for "Demo Mode" hardcoded reliability is king.
+
+        setData(demoData);
+        setIssues([]);
+        setReliability(null);
+
+        // 2. Auto Scan after delay
+        setTimeout(() => {
+            const foundIssues = scanForLeaks(demoData);
+            const pricedIssues = estimateImpact(foundIssues, demoData);
+            setIssues(pricedIssues);
+            setReliability(calculateReliabilityMetrics(demoData));
+
+            // 3. Highlight the biggest issue
+            const biggest = pricedIssues.sort((a, b) => b.estimated_loss_usd - a.estimated_loss_usd)[0];
+            if (biggest) {
+                setSelectedIssueId(biggest.issue_id);
+            }
+        }, 800);
     };
 
     const handleInjectChaos = () => {
@@ -212,6 +247,13 @@ export default function Home() {
                     >
                         <Database size={16} />
                         Load Messy Funnel
+                    </button>
+                    <button
+                        onClick={handleRunFullDemo}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md shadow-sm hover:bg-purple-700 text-sm font-medium transition-colors border border-purple-500"
+                    >
+                        <PlayCircle size={16} />
+                        Run Full Demo
                     </button>
                     {data.length > 0 && (
                         <button
