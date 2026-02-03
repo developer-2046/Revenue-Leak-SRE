@@ -8,6 +8,10 @@ export function parseCSV(csvString: string): FunnelRecord[] {
         dynamicTyping: true
     });
 
-    // Cast to FunnelRecord. In a real app we'd validate schema with Zod.
-    return result.data as FunnelRecord[];
+    // Cast to FunnelRecord and ensure ID is string
+    return (result.data as any[]).map(r => ({
+        ...r,
+        id: String(r.id),
+        value_usd: Number(r.value_usd) // Ensure value is number
+    })) as FunnelRecord[];
 }
