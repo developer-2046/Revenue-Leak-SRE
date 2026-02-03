@@ -202,7 +202,7 @@ export default function Home() {
     };
 
     return (
-        <div className={classNames("min-h-screen bg-gray-50/50 font-sans transition-all duration-500", presentationMode ? "scale-100" : "")}>
+        <div className={classNames("min-h-screen bg-gray-50/50 font-sans", presentationMode ? "" : "")}>
             <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-100/40 via-white to-white -z-10" />
 
             {/* Verification Modal */}
