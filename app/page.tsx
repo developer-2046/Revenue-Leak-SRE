@@ -1,23 +1,26 @@
 'use client';
 
 import { useState } from 'react';
-import { FunnelRecord } from '@/lib/types';
+import { FunnelRecord, LeakIssue } from '@/lib/types';
 import { generateSampleData } from '@/lib/sample-data';
 import { parseCSV } from '@/lib/csv';
 import { scanForLeaks } from '@/lib/scanner';
-import { Upload, Play, Database, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { estimateImpact } from '@/lib/estimator';
+import { Upload, Database, AlertTriangle, ShieldAlert } from 'lucide-react';
 
 export default function Home() {
     const [data, setData] = useState<FunnelRecord[]>([]);
-    const [issues, setIssues] = useState<any[]>([]);
+    const [issues, setIssues] = useState<LeakIssue[]>([]);
 
     const handleLoadSample = () => {
         const sample = generateSampleData();
         setData(sample);
+        setIssues([]);
     };
 
     const handleScan = () => {
-        const foundIssues = scanForLeaks(data);
+        let foundIssues = scanForLeaks(data);
+        foundIssues = estimateImpact(foundIssues, data);
         setIssues(foundIssues);
     };
 
@@ -35,30 +38,62 @@ export default function Home() {
         reader.readAsText(file);
     };
 
+    const totalAtRisk = issues.reduce((acc, curr) => acc + (curr.estimated_loss_usd || 0), 0);
+    const highSevCount = issues.filter(i => i.severity_label === 'high').length;
+
     return (
         <div className="min-h-screen bg-gray-50 p-8 font-sans">
             <header className="mb-8 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-indigo-700">
-                    <AlertTriangle size={32} />
-                    <h1 className="text-3xl font-bold tracking-tight">Revenue Leak SRE</h1>
+                    <div className="bg-indigo-100 p-2 rounded-lg">
+                        <AlertTriangle size={24} className="text-indigo-600" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Revenue Leak SRE</h1>
+                        <p className="text-xs text-indigo-600 font-medium tracking-wide uppercase">GTM Stack Doctor</p>
+                    </div>
                 </div>
                 <div className="flex gap-4">
-                    <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 text-sm font-medium text-gray-700">
+                    <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors">
                         <Upload size={16} />
                         Upload CSV
                         <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
                     </label>
                     <button
                         onClick={handleLoadSample}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md shadow-sm hover:bg-indigo-700 text-sm font-medium"
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md shadow-sm hover:bg-indigo-700 text-sm font-medium transition-colors"
                     >
                         <Database size={16} />
-                        Load Sample Messy Funnel
+                        Load Messy Funnel
                     </button>
                 </div>
             </header>
 
             <main>
+                {/* KPI Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <p className="text-sm font-medium text-gray-500">Leaks Detected</p>
+                        <p className="text-3xl font-bold text-gray-900 mt-2">{issues.length}</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <p className="text-sm font-medium text-gray-500">Revenue at Risk</p>
+                        <p className="text-3xl font-bold text-rose-600 mt-2">
+                            ${totalAtRisk.toLocaleString()}
+                        </p>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <p className="text-sm font-medium text-gray-500">High Severity Issues</p>
+                        <p className="text-3xl font-bold text-orange-600 mt-2">{highSevCount}</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <p className="text-sm font-medium text-gray-500">Est. Recoverable</p>
+                        <p className="text-3xl font-bold text-green-600 mt-2">
+                            ${Math.round(totalAtRisk * 0.4).toLocaleString()}
+                        </p>
+                    </div>
+                </div>
+
                 {data.length === 0 ? (
                     <div className="text-center py-24 bg-white rounded-xl shadow-sm border border-dashed border-gray-300">
                         <h3 className="text-lg font-medium text-gray-900">No Data Loaded</h3>
@@ -88,7 +123,7 @@ export default function Home() {
                                 </h2>
                                 <div className="grid gap-4">
                                     {issues.map(issue => (
-                                        <div key={issue.issue_id} className="bg-white p-4 rounded-lg border border-rose-100 flex justify-between items-center">
+                                        <div key={issue.issue_id} className="bg-white p-4 rounded-lg border border-rose-100 flex justify-between items-center group hover:shadow-md transition-shadow cursor-pointer">
                                             <div>
                                                 <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800 mb-1">
                                                     {issue.issue_type}
@@ -97,7 +132,8 @@ export default function Home() {
                                                 <p className="text-xs text-gray-500">Record ID: {issue.record_id}</p>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-sm font-bold text-gray-900">{issue.severity_label} Priority</div>
+                                                <div className="text-sm font-bold text-rose-600">-${issue.estimated_loss_usd.toLocaleString()}</div>
+                                                <div className="text-xs text-gray-500 mt-1 font-bold">{issue.severity_label.toUpperCase()}</div>
                                             </div>
                                         </div>
                                     ))}
