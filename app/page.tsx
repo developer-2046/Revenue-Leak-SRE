@@ -44,8 +44,65 @@ export default function Home() {
     };
 
     const handleRunFix = async (pack: FixPack) => {
-        // TODO: Live Action
-        alert(`Simulating Fix: ${pack.title}. Real Slack alert coming in next step.`);
+        // 1. Post to Slack
+        try {
+            const res = await fetch('/api/slack', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: pack.slack_message || `Fix executed: ${pack.title}`,
+                    payload: pack.automation_payload
+                })
+            });
+            const json = await res.json();
+            if (!json.success && json.error) {
+                alert(`Live Action Note: ${json.error}. (Fix will still be applied locally)`);
+            } else if (json.success) {
+                alert('Success! Slack alert sent to #revenue-alerts.');
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        // 2. Apply Fix Locally to Demo "After" State
+        const issue = issues.find(i => i.issue_id === selectedIssueId);
+        if (issue) {
+            let recordName = '';
+            const newData = data.map(r => {
+                if (r.id !== issue.record_id) return r;
+                recordName = r.name;
+
+                const copy = { ...r };
+                if (issue.issue_type === 'SLA_BREACH_UNTOUCHED') {
+                    copy.last_touch_at = new Date().toISOString();
+                    copy.owner = copy.owner || 'Antigravity (You)';
+                } else if (issue.issue_type === 'UNASSIGNED_OWNER') {
+                    copy.owner = 'Antigravity (You)';
+                } else if (issue.issue_type === 'STALE_OPP') {
+                    copy.last_touch_at = new Date().toISOString();
+                    copy.notes = (copy.notes || '') + ' [Rescued]';
+                } else if (issue.issue_type === 'DUPLICATE_SUSPECT') {
+                    // Mark as merged
+                    copy.notes = (copy.notes || '') + ' [Merged]';
+                    // Ideally we remove it, but showing it as resolved (maybe severity drops?) is also fine.
+                    // Let's remove it to show "Leaks count goes down"
+                    return null;
+                } else if (issue.issue_type === 'NO_NEXT_STEP') {
+                    copy.next_step = 'Follow up task created';
+                }
+                return copy;
+            }).filter(Boolean) as FunnelRecord[];
+
+            setData(newData);
+
+            // Re-scan to update UI
+            setTimeout(() => {
+                const foundIssues = scanForLeaks(newData);
+                const pricedIssues = estimateImpact(foundIssues, newData);
+                setIssues(pricedIssues);
+                setSelectedIssueId(null);
+            }, 500);
+        }
     };
 
     const totalAtRisk = issues.reduce((acc, curr) => acc + (curr.estimated_loss_usd || 0), 0);
