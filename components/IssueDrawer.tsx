@@ -67,12 +67,12 @@ export function IssueDrawer({ issue, record, onClose, onRunFix }: IssueDrawerPro
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex justify-end">
+        <div className="fixed inset-0 z-[9999] flex justify-end">
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-all" onClick={onClose} />
 
             {/* Drawer */}
-            <div className="relative w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border-l border-gray-200">
+            <div className="relative w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col border-l border-gray-200">
                 <div className="p-8 border-b border-gray-100 flex justify-between items-start bg-white">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
