@@ -151,67 +151,69 @@ export function IssueDrawer({ issue, record, onClose, onRunFix }: IssueDrawerPro
                             </div>
                         </section>
 
-                        {/* Right Column: Fix Action */}
-                        <div className="h-full">
-                            <div className="bg-white h-full p-8 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col">
-                                <div className="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
-                                <div className="flex items-center gap-3 mb-6 text-green-700">
-                                    <Zap size={24} />
-                                    <h3 className="text-xl font-bold">Remediation Plan</h3>
-                                </div>
+                    </div>
 
-                                <div className="flex-1 flex flex-col justify-center">
-                                    {!fixPack ? (
-                                        <div className="text-center">
-                                            <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                                                <Zap size={32} className="text-gray-400" />
-                                            </div>
-                                            <h4 className="text-gray-900 font-bold text-lg mb-2">Automated Fix Available</h4>
-                                            <p className="text-gray-500 mb-8 max-w-sm mx-auto">Our engine has generated a safe, atomic fix pack for this issue. Click below to review.</p>
-                                            <button
-                                                onClick={handleGenerateValues}
-                                                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all font-sans"
-                                            >
-                                                Generate Fix Pack
-                                            </button>
+                    {/* Right Column: Fix Action */}
+                    <div className="h-full">
+                        <div className="bg-white h-full p-8 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden flex flex-col">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+                            <div className="flex items-center gap-3 mb-6 text-green-700">
+                                <Zap size={24} />
+                                <h3 className="text-xl font-bold">Remediation Plan</h3>
+                            </div>
+
+                            <div className="flex-1 flex flex-col justify-center">
+                                {!fixPack ? (
+                                    <div className="text-center">
+                                        <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                            <Zap size={32} className="text-gray-400" />
                                         </div>
-                                    ) : (
-                                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                            <div className="space-y-4">
-                                                {fixPack.steps.map((step, i) => (
-                                                    <div key={i} className="flex gap-3">
-                                                        <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs mt-0.5">{i + 1}</div>
-                                                        <p className="text-gray-800 font-medium">{step}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            {diff && (
-                                                <div className="mt-6 border-t border-gray-100 pt-6">
-                                                    <FixPackPreview record={record} impactedRecord={diff} steps={fixPack.workflow_steps} />
+                                        <h4 className="text-gray-900 font-bold text-lg mb-2">Automated Fix Available</h4>
+                                        <p className="text-gray-500 mb-8 max-w-sm mx-auto">Our engine has generated a safe, atomic fix pack for this issue. Click below to review.</p>
+                                        <button
+                                            onClick={handleGenerateValues}
+                                            className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all font-sans"
+                                        >
+                                            Generate Fix Pack
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                        <div className="space-y-4">
+                                            {fixPack.steps.map((step, i) => (
+                                                <div key={i} className="flex gap-3">
+                                                    <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs mt-0.5">{i + 1}</div>
+                                                    <p className="text-gray-800 font-medium">{step}</p>
                                                 </div>
-                                            )}
-                                            <div className="border-t border-gray-100 pt-6">
-                                                {!isApplied ? (
-                                                    <button
-                                                        onClick={handleApprove}
-                                                        className="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-xl font-bold text-lg shadow-xl flex items-center justify-center gap-2 transition-transform active:scale-[0.98]"
-                                                    >
-                                                        <ShieldCheck /> Execute Fix Pack
-                                                    </button>
-                                                ) : (
-                                                    <button disabled className="w-full py-4 bg-green-50 text-green-700 border border-green-200 rounded-xl font-bold text-lg flex items-center justify-center gap-2">
-                                                        <CheckCircle /> Fix Applied Successfully
-                                                    </button>
-                                                )}
-                                            </div>
+                                            ))}
                                         </div>
-                                    )}
-                                </div>
+                                        {diff && (
+                                            <div className="mt-6 border-t border-gray-100 pt-6">
+                                                <FixPackPreview record={record} impactedRecord={diff} steps={fixPack.workflow_steps} />
+                                            </div>
+                                        )}
+                                        <div className="border-t border-gray-100 pt-6">
+                                            {!isApplied ? (
+                                                <button
+                                                    onClick={handleApprove}
+                                                    className="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-xl font-bold text-lg shadow-xl flex items-center justify-center gap-2 transition-transform active:scale-[0.98]"
+                                                >
+                                                    <ShieldCheck /> Execute Fix Pack
+                                                </button>
+                                            ) : (
+                                                <button disabled className="w-full py-4 bg-green-50 text-green-700 border border-green-200 rounded-xl font-bold text-lg flex items-center justify-center gap-2">
+                                                    <CheckCircle /> Fix Applied Successfully
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
-
                     </div>
+
                 </div>
             </div>
-            );
+        </div>
+    );
 }
