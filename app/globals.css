@@ -68,11 +68,12 @@
 
 @layer base {
   * {
-    @apply border-gray-200;
+    border-color: hsl(var(--border));
   }
 
   body {
-    @apply bg-gray-50 text-gray-900;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
