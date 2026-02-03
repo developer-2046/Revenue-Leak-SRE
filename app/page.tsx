@@ -6,7 +6,6 @@ import { generateSampleData } from '@/lib/sample-data';
 import { parseCSV } from '@/lib/csv';
 import { scanForLeaks } from '@/lib/scanner';
 import { estimateImpact } from '@/lib/estimator';
-import { estimateImpact } from '@/lib/estimator';
 import { calculateReliabilityMetrics, ReliabilityMetrics } from '@/lib/reliability';
 import { Upload, Database, AlertTriangle, ShieldAlert, Zap, Activity, TrendingDown, History, PlayCircle } from 'lucide-react';
 import { IssueDrawer } from '@/components/IssueDrawer';
