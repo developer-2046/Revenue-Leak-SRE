@@ -172,7 +172,8 @@ export default function Home() {
     };
 
     return (
-        <div className={classNames("min-h-screen bg-gray-50 font-sans transition-all duration-500", presentationMode ? "scale-100" : "")}>
+        <div className={classNames("min-h-screen bg-gray-50/50 font-sans transition-all duration-500", presentationMode ? "scale-100" : "")}>
+            <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-100/40 via-white to-white -z-10" />
 
             {/* Verification Modal */}
             {verificationReport && (
@@ -320,7 +321,7 @@ export default function Home() {
                                                     <tr key={issue.issue_id} className="hover:bg-gray-50 transition-colors">
                                                         <td className="px-6 py-4">
                                                             <span className={`inline-flex px-2 py-0.5 rounded text-xs font-bold uppercase ${issue.severity >= 8 ? 'bg-red-100 text-red-800' :
-                                                                    issue.severity >= 5 ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800'
+                                                                issue.severity >= 5 ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800'
                                                                 }`}>
                                                                 SEV {issue.severity}
                                                             </span>
