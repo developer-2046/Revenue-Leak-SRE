@@ -9,7 +9,7 @@ import { calculateImpact } from '@/lib/impact';
 import { computeIncident, IncidentManager } from '@/lib/incident';
 import { applyFixPack } from '@/lib/applyFix';
 import { SLOManager, DEFINED_SLOS } from '@/lib/slo';
-import { Upload, PlayCircle, Siren, Layout, Monitor, ShieldCheck, Trophy, Sparkles } from 'lucide-react';
+import { Upload, PlayCircle, Siren, Layout, Monitor, ShieldCheck, Trophy, Sparkles, AlertTriangle } from 'lucide-react';
 import { IssueDrawer } from '@/components/IssueDrawer';
 import { logAuditEvent } from '@/lib/audit';
 import { IncidentHeader, ErrorBudgetWidget, TimelinePanel, TopCausesWidget, AffectedSegmentsWidget } from '@/components/WarRoom';
@@ -397,6 +397,40 @@ export default function Home() {
                 )}
             </div>
 
+            {/* Debugging: State Mismatch Detection (Remove in Prod) */}
+            {selectedIssueId && !selectedIssue && (
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-md" onClick={() => setSelectedIssueId(null)}>
+                    <div className="bg-red-50 border-2 border-red-500 p-8 rounded-xl max-w-lg shadow-2xl animate-in fade-in zoom-in duration-300">
+                        <h2 className="text-2xl font-black text-red-600 mb-4 flex items-center gap-2"><Siren className="animate-pulse" /> CRITICAL STATE ERROR</h2>
+                        <p className="font-mono text-xs bg-red-100 p-2 rounded mb-4">selectedIssueId: "{selectedIssueId}"</p>
+                        <p className="text-gray-800 font-medium mb-4">
+                            The application state contains the ID, but the Issue object could not be found in the `issues` array.
+                        </p>
+                        <div className="text-xs font-mono text-gray-500 overflow-y-auto max-h-32 bg-white p-2 border border-gray-200">
+                            Available IDs: {issues.map(i => i.issue_id).join(', ')}
+                        </div>
+                        <button className="mt-6 w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg" onClick={() => setSelectedIssueId(null)}>
+                            Dismiss & Reset
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {selectedIssueId && selectedIssue && !selectedRecord && (
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-md" onClick={() => setSelectedIssueId(null)}>
+                    <div className="bg-orange-50 border-2 border-orange-500 p-8 rounded-xl max-w-lg shadow-2xl animate-in fade-in zoom-in duration-300">
+                        <h2 className="text-2xl font-black text-orange-600 mb-4 flex items-center gap-2"><AlertTriangle /> ORPHANED ISSUE</h2>
+                        <p className="text-gray-800 font-medium mb-4">
+                            Issue found, but the associated Record (ID: {selectedIssue.record_id}) is missing from the dataset.
+                        </p>
+                        <p className="font-mono text-xs bg-orange-100 p-2 rounded mb-4">Search ID: "{String(selectedIssue.record_id)}"</p>
+                        <button className="mt-6 w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg" onClick={() => setSelectedIssueId(null)}>
+                            Dismiss & Reset
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <IssueDrawer
                 issue={selectedIssue}
                 record={selectedRecord}
@@ -405,7 +439,7 @@ export default function Home() {
             />
             {/* Debug Footer */}
             <div className="fixed bottom-0 left-0 bg-black text-white text-xs p-1 opacity-70 pointer-events-none z-[100]">
-                Selected: {selectedIssueId || 'None'} | Issues: {issues.length} | Data: {data.length}
+                Selected: {selectedIssueId || 'None'} | Issues: {issues.length} | Data: {data.length} | Last ID Type: {issues[0] ? typeof issues[0].issue_id : '?'}
             </div>
         </div>
     );
