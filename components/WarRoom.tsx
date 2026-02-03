@@ -43,19 +43,19 @@ export function AffectedSegmentsWidget({ segments }: { segments: { key: string; 
                 </div>
                 Blast Radius
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                 {segments.map((s, i) => (
-                    <div key={i} className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs uppercase">
+                    <div key={i} className="flex justify-between items-center group">
+                        <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs uppercase">
                                 {s.value.substring(0, 2)}
                             </div>
-                            <div>
-                                <p className="font-semibold text-gray-900">{s.value}</p>
+                            <div className="min-w-0">
+                                <p className="font-semibold text-gray-900 truncate">{s.value}</p>
                                 <p className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded inline-block uppercase font-bold tracking-wider">{s.key}</p>
                             </div>
                         </div>
-                        <div className="font-mono font-bold text-orange-600">
+                        <div className="font-mono font-bold text-orange-600 whitespace-nowrap ml-2">
                             -${s.at_risk_usd.toLocaleString()}
                         </div>
                     </div>
@@ -98,11 +98,11 @@ export function IncidentHeader({ incident }: { incident: Incident }) {
                         <Flame className="text-red-600" size={32} />
                     </div>
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <span className={`px-4 py-1.5 text-sm font-black rounded-lg uppercase tracking-wide shadow-sm ${severityColors[incident.severity]}`}>
+                        <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2">
+                            <span className={`px-4 py-1.5 text-sm font-black rounded-lg uppercase tracking-wide shadow-sm w-fit ${severityColors[incident.severity]}`}>
                                 SEV {incident.severity}
                             </span>
-                            <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+                            <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight">
                                 Active Revenue Incident
                             </h2>
                         </div>
