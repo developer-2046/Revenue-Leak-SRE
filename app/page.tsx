@@ -4,14 +4,21 @@ import { useState } from 'react';
 import { FunnelRecord } from '@/lib/types';
 import { generateSampleData } from '@/lib/sample-data';
 import { parseCSV } from '@/lib/csv';
-import { Upload, Play, Database, AlertTriangle } from 'lucide-react';
+import { scanForLeaks } from '@/lib/scanner';
+import { Upload, Play, Database, AlertTriangle, ShieldAlert } from 'lucide-react';
 
 export default function Home() {
     const [data, setData] = useState<FunnelRecord[]>([]);
+    const [issues, setIssues] = useState<any[]>([]);
 
     const handleLoadSample = () => {
         const sample = generateSampleData();
         setData(sample);
+    };
+
+    const handleScan = () => {
+        const foundIssues = scanForLeaks(data);
+        setIssues(foundIssues);
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,6 +30,7 @@ export default function Home() {
             const csv = event.target?.result as string;
             const parsed = parseCSV(csv);
             setData(parsed);
+            setIssues([]);
         };
         reader.readAsText(file);
     };
@@ -58,8 +66,47 @@ export default function Home() {
                     </div>
                 ) : (
                     <div className="space-y-6">
+                        {/* Actions Bar */}
+                        <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                            <div className="text-sm text-gray-500">
+                                Loaded <strong>{data.length}</strong> records
+                            </div>
+                            <button
+                                onClick={handleScan}
+                                className="flex items-center gap-2 px-6 py-2 bg-rose-600 text-white rounded-md shadow-sm hover:bg-rose-700 font-medium"
+                            >
+                                <ShieldAlert size={18} />
+                                Scan for Leaks
+                            </button>
+                        </div>
+
+                        {issues.length > 0 && (
+                            <div className="bg-rose-50 p-6 rounded-xl shadow-sm border border-rose-200">
+                                <h2 className="text-xl font-bold text-rose-900 mb-4 flex items-center gap-2">
+                                    <AlertTriangle />
+                                    {issues.length} Leaks Detected
+                                </h2>
+                                <div className="grid gap-4">
+                                    {issues.map(issue => (
+                                        <div key={issue.issue_id} className="bg-white p-4 rounded-lg border border-rose-100 flex justify-between items-center">
+                                            <div>
+                                                <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800 mb-1">
+                                                    {issue.issue_type}
+                                                </span>
+                                                <p className="text-gray-900 font-medium">{issue.explanation}</p>
+                                                <p className="text-xs text-gray-500">Record ID: {issue.record_id}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-sm font-bold text-gray-900">{issue.severity_label} Priority</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4">loaded {data.length} records</h2>
+                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Record Data</h2>
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                                     <thead className="bg-gray-50">
