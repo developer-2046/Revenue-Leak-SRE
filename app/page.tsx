@@ -370,6 +370,10 @@ export default function Home() {
                 onClose={() => setSelectedIssueId(null)}
                 onRunFix={handleRunFix}
             />
+            {/* Debug Footer */}
+            <div className="fixed bottom-0 left-0 bg-black text-white text-xs p-1 opacity-70 pointer-events-none z-[100]">
+                Selected: {selectedIssueId || 'None'} | Issues: {issues.length} | Data: {data.length}
+            </div>
         </div>
     );
 }
