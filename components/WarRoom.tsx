@@ -87,7 +87,6 @@ export function IncidentHeader({ incident }: { incident: Incident }) {
     };
 
     return (
-    return (
         <div className="bg-white border-l-8 border-red-500 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-8 mb-8 animate-in slide-in-from-top duration-500 relative overflow-hidden">
 
             {/* Background Pattern */}
