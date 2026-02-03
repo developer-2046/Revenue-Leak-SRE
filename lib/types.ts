@@ -37,10 +37,36 @@ export interface FixPack {
     title: string;
     steps: string[];
     automation_payload: any;
-    verification_check: string;
-    slack_message?: string;
+    verification_check?: string;
     email_draft?: {
         subject: string;
         body: string;
     };
+    slack_message?: string;
+}
+
+export type IncidentStatus = 'open' | 'resolved';
+export type IncidentSeverity = 1 | 2 | 3 | 4 | 5;
+export type PagingState = 'OK' | 'WARN' | 'PAGE';
+
+export interface Incident {
+    incident_id: string;
+    created_at: string;
+    status: IncidentStatus;
+    severity: IncidentSeverity;
+    total_at_risk_usd: number;
+    burn_rate: number; // 0-1 (or >1 if burned)
+    error_budget_usd: number;
+    top_causes: { issue_type: string; count: number; at_risk_usd: number }[];
+    affected_segments: { key: string; value: string; at_risk_usd: number }[]; // e.g. Owner: Alice
+}
+
+export type TimelineEventType = 'DETECTED' | 'FIXPACK_GENERATED' | 'FIX_APPLIED' | 'RESOLVED' | 'MANUAL_NOTE';
+
+export interface TimelineEvent {
+    id: string;
+    ts: string;
+    type: TimelineEventType;
+    message: string;
+    data?: any;
 }
