@@ -6,12 +6,14 @@ import { generateSampleData } from '@/lib/sample-data';
 import { parseCSV } from '@/lib/csv';
 import { scanForLeaks } from '@/lib/scanner';
 import { estimateImpact } from '@/lib/estimator';
-import { Upload, Database, AlertTriangle, ShieldAlert, Zap } from 'lucide-react';
+import { calculateReliabilityMetrics, ReliabilityMetrics } from '@/lib/reliability';
+import { Upload, Database, AlertTriangle, ShieldAlert, Zap, Activity, TrendingDown } from 'lucide-react';
 import { IssueDrawer } from '@/components/IssueDrawer';
 
 export default function Home() {
     const [data, setData] = useState<FunnelRecord[]>([]);
     const [issues, setIssues] = useState<LeakIssue[]>([]);
+    const [reliability, setReliability] = useState<ReliabilityMetrics | null>(null);
     const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
 
     const selectedIssue = issues.find(i => i.issue_id === selectedIssueId) || null;
@@ -21,6 +23,7 @@ export default function Home() {
         const sample = generateSampleData();
         setData(sample);
         setIssues([]);
+        setReliability(null);
     };
 
     const handleInjectChaos = () => {
@@ -98,12 +101,14 @@ export default function Home() {
         setData(chaosData);
         alert('🔥 Chaos Injected! Run scan to see the damage.');
         setIssues([]); // Reset scan
+        setReliability(null);
     };
 
     const handleScan = () => {
         let foundIssues = scanForLeaks(data);
         foundIssues = estimateImpact(foundIssues, data);
         setIssues(foundIssues);
+        setReliability(calculateReliabilityMetrics(data));
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,6 +121,7 @@ export default function Home() {
             const parsed = parseCSV(csv);
             setData(parsed);
             setIssues([]);
+            setReliability(null);
         };
         reader.readAsText(file);
     };
@@ -172,6 +178,7 @@ export default function Home() {
                 const foundIssues = scanForLeaks(newData);
                 const pricedIssues = estimateImpact(foundIssues, newData);
                 setIssues(pricedIssues);
+                setReliability(calculateReliabilityMetrics(newData));
                 setSelectedIssueId(null);
             }, 500);
         }
@@ -241,6 +248,80 @@ export default function Home() {
                         </p>
                     </div>
                 </div>
+
+                {/* Revenue Reliability Section (New) */}
+                {reliability && (
+                    <div className="mb-8">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Activity className="text-indigo-600" />
+                            <h2 className="text-xl font-bold text-gray-900">Revenue Reliability & Error Budget</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Error Budget Card */}
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="font-semibold text-gray-700">Monthly Error Budget</h3>
+                                    <span className={`text-sm font-bold px-2 py-1 rounded ${reliability.error_budget_remaining > 0.2 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                        {Math.round(reliability.error_budget_remaining * 100)}% Remaining
+                                    </span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+                                    <div
+                                        className={`h-4 rounded-full transition-all duration-500 ${reliability.error_budget_remaining > 0.2 ? 'bg-green-500' : 'bg-red-500'}`}
+                                        style={{ width: `${reliability.error_budget_remaining * 100}%` }}
+                                    ></div>
+                                </div>
+                                <p className="text-xs text-gray-500">Based on 90% SLA Target across all funnel stages.</p>
+
+                                <div className="mt-6 space-y-3">
+                                    <div>
+                                        <div className="flex justify-between text-sm mb-1">
+                                            <span>Lead Response SLO (1hr)</span>
+                                            <span>{Math.round(reliability.lead_slo_compliance_rate * 100)}%</span>
+                                        </div>
+                                        <div className="w-full bg-gray-100 rounded-full h-2">
+                                            <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${reliability.lead_slo_compliance_rate * 100}%` }}></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between text-sm mb-1">
+                                            <span>Opp Freshness SLO (10d)</span>
+                                            <span>{Math.round(reliability.opp_freshness_compliance_rate * 100)}%</span>
+                                        </div>
+                                        <div className="w-full bg-gray-100 rounded-full h-2">
+                                            <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${reliability.opp_freshness_compliance_rate * 100}%` }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Top Breaches Card */}
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                                <h3 className="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                    <TrendingDown size={18} /> Top 5 Revenue Breaches
+                                </h3>
+                                <div className="space-y-3">
+                                    {reliability.top_breaches.length === 0 ? (
+                                        <p className="text-sm text-gray-500 italic">No significant breaches found.</p>
+                                    ) : (
+                                        reliability.top_breaches.map(b => (
+                                            <div key={b.id} className="flex justify-between items-center border-b border-gray-50 pb-2 last:border-0">
+                                                <div>
+                                                    <p className="font-medium text-sm text-gray-900">{b.name}</p>
+                                                    <p className="text-xs text-rose-600">{b.reason}</p>
+                                                </div>
+                                                <div className="text-sm font-bold text-gray-700">
+                                                    -${b.dollar_impact.toLocaleString()}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {data.length === 0 ? (
                     <div className="text-center py-24 bg-white rounded-xl shadow-sm border border-dashed border-gray-300">
