@@ -1,41 +1,54 @@
-# Revenue Leak SRE (GTM Stack Doctor)
+# Revenue Leak SRE
 
-A hackathon-ready product to detect revenue leaks in a GTM funnel, quantify impact, and generate/execute fixes.
+**Revenue Leak SRE** is a proactive observability and remediation platform for Go-To-Market (GTM) funnels. It functions as a "Site Reliability Engineer" for your revenue operations, automatically detecting process leaks, quantifying financial impact, and executing corrective actions.
 
-## What It Is
-Revenue Leak SRE acts as a doctor for your GTM stack. It scans your leads and opportunities (imported via CSV) for common "leaks" such as:
-- SLA Breaches (untouched leads)
-- Stale Opportunities
-- Missing Owners
-- Duplicates
+## Overview
+Modern GTM stacks (Salesforce, HubSpot, etc.) accumulate silent failures—leads that fall through cracks, stalled opportunities, and data hygiene issues. Revenue Leak SRE provides an automated layer to:
 
-It calculates the potential revenue at risk and provides "Fix Packs" to resolve them—including live Slack alerts.
+1.  **Scan** ingest funnels for defined "Leak Patterns" (e.g., SLA breaches, stale deals, missing ownership).
+2.  **Quantify** the exact revenue at risk using customizable impact models.
+3.  **Remediate** issues via generated "Fix Packs" that can trigger live actions (Slack alerts, email drafts, CRM tasks).
 
-## Setup Steps
+## Key Features
+-   **Data Agnostic Ingest**: Supports CSV imports from any standard CRM export.
+-   **Rules Engine**: 6+ built-in leak detectors including SLA Monitoring, Outcome Probability Decay, and Deduplication logic.
+-   **Impact Estimation**: Financial modeling to prioritize high-value leaks.
+-   **Action Framework**: "Fix Packs" generation with automated payloads for Slack, Email, and Task management.
+-   **Chaos Testing**: Built-in simulator to test system resilience against data floods and process failures.
 
-1.  **Prerequisites**: Node.js 18+.
-2.  **Install**:
-    ```bash
-    npm install
-    ```
-3.  **Environment**:
-    ```bash
-    cp .env.example .env
-    ```
-    Add `SLACK_WEBHOOK_URL` if you want to test the live Slack integration.
-4.  **Run**:
-    ```bash
-    npm run dev
-    ```
+## Quick Start
 
-## Demo Script
-(See `docs/DEMO_SCRIPT.md` for full details)
+### 1. Installation
+Clone the repository and install dependencies:
+```bash
+git clone https://github.com/developer-2046/Revenue-Leak-SRE.git
+cd Revenue-Leak-SRE
+npm install
+```
 
-1.  Load the app.
-2.  Click "Load Sample".
-3.  See the leaks appear with $ amounts.
-4.  Click "Generate Fix Pack" on an SLA Breach.
-5.  Click "Run Fix #1" to see the Slack alert.
+### 2. Configuration
+Setup your environment variables:
+```bash
+cp .env.example .env
+```
+*Optional: Add `SLACK_WEBHOOK_URL` to enable live alerting capabilities.*
 
-## Screenshots
-![Dashboard Placeholder](placeholder.png)
+### 3. Running the Application
+Start the development server:
+```bash
+npm run dev
+```
+Navigate to `http://localhost:3000`.
+
+## Architecture
+The application is built with a modern Next.js stack, designed for extensibility:
+-   **Frontend**: Next.js 14, React, Tailwind CSS, Lucide Icons.
+-   **Core Logic**: TypeScript-based Rules Engine and Impact Estimator (`/lib`).
+-   **Integrations**: Server-side API routes for secure third-party communication (Slack).
+
+For deep dives, see:
+-   [Architecture Overview](docs/ARCHITECTURE.md)
+-   [Rules Catalog](docs/RULES_CATALOG.md)
+
+## Contributing
+We welcome contributions to add new Leak Rules or Fix Integrations. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
