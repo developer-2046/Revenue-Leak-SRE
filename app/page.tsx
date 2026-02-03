@@ -1,16 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { FunnelRecord, LeakIssue } from '@/lib/types';
+import { FunnelRecord, LeakIssue, FixPack } from '@/lib/types';
 import { generateSampleData } from '@/lib/sample-data';
 import { parseCSV } from '@/lib/csv';
 import { scanForLeaks } from '@/lib/scanner';
 import { estimateImpact } from '@/lib/estimator';
 import { Upload, Database, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { IssueDrawer } from '@/components/IssueDrawer';
 
 export default function Home() {
     const [data, setData] = useState<FunnelRecord[]>([]);
     const [issues, setIssues] = useState<LeakIssue[]>([]);
+    const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+
+    const selectedIssue = issues.find(i => i.issue_id === selectedIssueId) || null;
+    const selectedRecord = selectedIssue ? data.find(r => r.id === selectedIssue.record_id) || null : null;
 
     const handleLoadSample = () => {
         const sample = generateSampleData();
@@ -36,6 +41,11 @@ export default function Home() {
             setIssues([]);
         };
         reader.readAsText(file);
+    };
+
+    const handleRunFix = async (pack: FixPack) => {
+        // TODO: Live Action
+        alert(`Simulating Fix: ${pack.title}. Real Slack alert coming in next step.`);
     };
 
     const totalAtRisk = issues.reduce((acc, curr) => acc + (curr.estimated_loss_usd || 0), 0);
@@ -123,7 +133,11 @@ export default function Home() {
                                 </h2>
                                 <div className="grid gap-4">
                                     {issues.map(issue => (
-                                        <div key={issue.issue_id} className="bg-white p-4 rounded-lg border border-rose-100 flex justify-between items-center group hover:shadow-md transition-shadow cursor-pointer">
+                                        <div
+                                            key={issue.issue_id}
+                                            onClick={() => setSelectedIssueId(issue.issue_id)}
+                                            className="bg-white p-4 rounded-lg border border-rose-100 flex justify-between items-center group hover:shadow-md transition-shadow cursor-pointer hover:border-rose-300"
+                                        >
                                             <div>
                                                 <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800 mb-1">
                                                     {issue.issue_type}
@@ -178,6 +192,13 @@ export default function Home() {
                     </div>
                 )}
             </main>
+
+            <IssueDrawer
+                issue={selectedIssue}
+                record={selectedRecord}
+                onClose={() => setSelectedIssueId(null)}
+                onRunFix={handleRunFix}
+            />
         </div>
     );
 }
