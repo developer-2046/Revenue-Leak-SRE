@@ -1,51 +1,78 @@
-# Architecture
+# Revenue Leak SRE - Architecture
 
-## Overview
-Revenue Leak SRE is a Next.js application designed to ingest GTM data (Leads/Opps), scan for process leaks, quantify financial impact, and execute fixes.
+We apply **Site Reliability Engineering (SRE)** principles to Go-To-Market (GTM) operations.
+Instead of treating revenue leaks as "bad data", we treat them as **System Incidents**.
 
-## Component Diagram
+## 🏗 High-Level Design
 
 ```mermaid
 graph TD
-    User[User] -->|Uploads CSV| UI[Dashboard UI]
-    UI -->|Stores State| Store[In-Memory Store]
-    Store --> Scanner[Leak Scanner (lib/scanner)]
-    Scanner -->|Raw Issues| Estimator[Impact Estimator (lib/estimator)]
-    Estimator -->|Priced Issues| UI
+    User[User / GTM Ops] -->|Click Demo Mode| UI[Next.js Frontend]
     
-    UI -->|Click issue| Drawer[Issue Drawer]
-    Drawer -->|Generate| FixGen[Fix Generator (lib/fix-generator)]
-    FixGen -->|Fix Pack| Drawer
+    subgraph "Core Engine (SRE Logic)"
+        Scanner[Rules Engine / Scanner]
+        Estimator[Impact Estimator ($)]
+        IncidentMgr[Incident Commander]
+        FixGen[Fix Pack Generator]
+        DSL[DSL Runtime]
+    end
     
-    Drawer -->|Run Fix| Action[Live Action Handler]
-    Action -->|POST| API[Next.js API Route (/api/slack)]
-    API -->|Webhook| Slack[Slack API]
+    subgraph "Data Layer"
+        CSV[CSV Parser]
+        Store[In-Memory State]
+    end
+
+    UI --> Scanner
+    Scanner -->|Raw Issues| Estimator
+    Estimator -->|Priced Risks| IncidentMgr
+    IncidentMgr -->|Sev-1 Alert| UI
     
-    Action -->|Update State| Store
-    Store -->|Re-trigger| Scanner
+    UI -->|Request Fix| FixGen
+    FixGen -->|FixPack (JSON DSL)| UI
+    UI -->|Approve| DSL
+    DSL -->|Apply Changes| Store
+    Store -->|Updated Data| Scanner
+    
+    Scanner -->|Re-Evaluate| Verifier[Regression Guard]
+    Verifier -->|Pass/Fail| UI
 ```
 
-## Key Modules
+## 🧩 Core Components
 
-### 1. Data Layer (`lib/types.ts`)
-- `FunnelRecord`: Unified schema for Leads and Opportunities.
-- `LeakIssue`: Represents a detected problem with severity and cost.
-- `FixPack`: Instructions and automation payload for resolving an issue.
+### 1. The Scanner (`lib/scanner.ts`)
+- **Role**: The "Monitoring Agent".
+- **Input**: Raw funnel records (Leads, Opps).
+- **Logic**: Evaluates records against `DEFINED_RULES` (SLA checks, Stale limits).
+- **Output**: Array of `LeakIssue` objects.
 
-### 2. Rules Engine (`lib/scanner.ts`)
-- Iterates through all records to find specific patterns.
-- Handles both single-record checks (SLA) and set-based checks (Duplicates).
-- Returns a list of `LeakIssue`.
+### 2. Impact Estimator (`lib/impact.ts`)
+- **Role**: The "Business Context".
+- **Logic**: 
+  - `Risk = Deal Value * Stage Probability * Decay Factor`
+  - Maps technical errors to financial loss.
 
-### 3. Impact Estimator (`lib/estimator.ts`)
-- Augments `LeakIssue` with `estimated_loss_usd`.
-- Uses business constants (rep cost, lead value) and decay functions.
+### 3. Incident Manager (`lib/incident.ts`)
+- **Role**: The "PagerDuty" of Revenue.
+- **Logic**:
+  - Aggregates priced risks.
+  - Calculates **Error Budget Burn**.
+  - Determines Incident Severity (SEV-1 to SEV-5).
+  - Maintains the `WarRoom` timeline.
 
-### 4. Fix Generator (`lib/fix-generator.ts`)
-- Maps `issue_type` to a `FixPack`.
-- Generates human-readable steps and automation JSON payloads.
-- Generates context-aware email drafts.
+### 4. Fix Pack DSL (`lib/fixpack-dsl.ts`)
+- **Purpose**: Infrastructure-as-Code for GTM.
+- **Concept**: Fixes shouldn't be manual clicks. They should be code.
+- **Structure**:
+  ```typescript
+  interface FixPackStep {
+      action: 'email' | 'slack' | 'crm_update';
+      params: Record<string, any>;
+  }
+  ```
+- **Capabilities**: Dry-run simulation (predicting `BlastRadius`) and audit logging.
 
-### 5. Live Action (`app/api/slack`)
-- A secure API route to proxy requests to Slack.
-- Protects the webhook URL (server-side environment variable).
+## 🔄 The Feedback Loop (SRE Model)
+1. **Observe**: Scan the funnel.
+2. **Prioritize**: Sort by `estimated_loss_usd`.
+3. **Remediate**: Apply deterministic Fix Packs.
+4. **Verify**: Re-scan to ensure the leak count decreased (Regression Guard).

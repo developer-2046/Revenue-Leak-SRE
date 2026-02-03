@@ -1,41 +1,49 @@
 # Rules Catalog
 
-These rules are implemented in `lib/scanner.ts`.
+The Revenue Leak SRE engine currently supports the following detection rules. Each rule maps to a Revenue SLO.
 
-## 1. SLA_BREACH_UNTOUCHED
-- **Logic**: Lead created > 30 mins ago AND `last_touch_at` is null.
-- **Severity**: High (8-10).
-- **Impact**: Value decays with time.
-- **Fix**: Immediate task creation + Email draft + Slack alert.
+## 1. SLA Breach (Untouched Lead)
+- **Code**: `SLA_BREACH_UNTOUCHED`
+- **SLO Mapping**: `SLO_LEAD_RESPONSE` (Latency)
+- **Severity**: High (SEV-2)
+- **Logic**: `Type == Lead` AND `TimeSinceCreation > 30 mins` AND `LastTouch == null`
+- **Fix Pack**: **"Rapid Response Protocol"**
+  - Auto-assign owner
+  - Send "Apology/Nudge" email
+  - Alert #revenue-leak-alerts channel
 
-## 2. UNASSIGNED_OWNER
-- **Logic**: `owner` field is null/empty.
-- **Severity**: High (9).
-- **Impact**: Flat penalty factor (50% of lead value).
-- **Fix**: Application assigns owner (Robin Robin or self).
+## 2. Stale Opportunity (Ghosting)
+- **Code**: `STALE_OPP`
+- **SLO Mapping**: `SLO_DEAL_VELOCITY` (Availability)
+- **Severity**: High (SEV-2)
+- **Logic**: `Type == Opp` AND `Stage != Closed` AND `LastTouch > 7 Days`
+- **Fix Pack**: **"Opportunity Rescue"**
+  - Check LinkedIn signal
+  - Draft "Breakup" email
+  - Offer discount hook
 
-## 3. NO_NEXT_STEP
-- **Logic**: 
-    - Lead > 1 day old with no `next_step`.
-    - Open Opportunity with no `next_step`.
-- **Severity**: Medium/High (6-7).
-- **Impact**: Flat penalty factor (30%).
-- **Fix**: Task to define next step.
+## 3. Duplicate Suspect
+- **Code**: `DUPLICATE_SUSPECT`
+- **SLO Mapping**: `SLO_DATA_QUALITY` (Error Rate)
+- **Severity**: Medium (SEV-3)
+- **Logic**: Same `domain` exists on multiple active records.
+- **Fix Pack**: **"Dedupe & Merge"**
+  - Identify primary record (newest activity)
+  - Merge notes
+  - Archive secondary
 
-## 4. STALE_OPP
-- **Logic**: Open Opportunity with `last_touch_at` > 7 days ago.
-- **Severity**: High (8).
-- **Impact**: Probability decay based on days inactive.
-- **Fix**: Rescue sequence checklist + Slack escalation.
+## 4. Unassigned Owner
+- **Code**: `UNASSIGNED_OWNER`
+- **SLO Mapping**: `SLO_UNOWNED_RECORDS`
+- **Severity**: Critical (SEV-1)
+- **Logic**: `Owner == null`
+- **Fix Pack**: **"Round Robin Routing"**
+  - Assign to next available rep (mocked as 'Round Robin Bot')
 
-## 5. DUPLICATE_SUSPECT
-- **Logic**: Same `domain` appears in multiple active records.
-- **Severity**: Medium (5).
-- **Impact**: Wasted rep hours.
-- **Fix**: Merge recommendation (keep newest/fullest).
-
-## 6. ROUTING_MISMATCH
-- **Logic**: `region` is missing.
-- **Severity**: Medium (5).
-- **Impact**: Low/Medium efficiency loss.
-- **Fix**: Manual review/update.
+## 5. No Next Step (Hygiene)
+- **Code**: `NO_NEXT_STEP`
+- **SLO Mapping**: `SLO_NEXT_STEP_HYGIENE`
+- **Severity**: Medium (SEV-3)
+- **Logic**: Active deal with `NextStep == null`
+- **Fix Pack**: **"Enforce Hygiene"**
+  - Set default next step based on Stage
