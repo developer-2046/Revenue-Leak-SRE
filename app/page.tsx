@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState, useEffect, useMemo } from 'react';
 import { FunnelRecord, LeakIssue, FixPack, Incident, TimelineEvent } from '@/lib/types';
 import { generateSampleData } from '@/lib/sample-data';
@@ -371,15 +373,12 @@ export default function Home() {
                                                         <td className="px-6 py-4 text-gray-500">{record?.name}</td>
                                                         <td className="px-6 py-4 font-mono text-gray-900 font-bold">${issue.estimated_loss_usd?.toLocaleString()}</td>
                                                         <td className="px-6 py-4 text-right">
-                                                            <button
-                                                                onClick={() => {
-                                                                    console.log("Clicked Issue:", issue.issue_id, "Record ID:", issue.record_id);
-                                                                    setSelectedIssueId(issue.issue_id);
-                                                                }}
+                                                            <Link
+                                                                href={`/fix/${issue.issue_id}`}
                                                                 className="text-indigo-600 hover:text-indigo-900 font-bold hover:underline"
                                                             >
                                                                 View Fix
-                                                            </button>
+                                                            </Link>
                                                         </td>
                                                     </tr>
                                                 );
