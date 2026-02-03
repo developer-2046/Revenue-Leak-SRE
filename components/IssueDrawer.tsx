@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { LeakIssue, FunnelRecord, FixPack } from '@/lib/types';
 import { generateFixPack } from '@/lib/fix-generator';
-import { X, Zap, CheckCircle, Copy, Slack } from 'lucide-react';
+import { X, Zap, CheckCircle, Copy, Slack, ShieldCheck, History } from 'lucide-react';
+import { FixPackPreview } from './FixPackPreview';
+import { ImpactedRecord } from '@/lib/fixpack'; // Use new types
+import { logAuditEvent } from '@/lib/audit';
 
 interface IssueDrawerProps {
     issue: LeakIssue | null;
@@ -12,13 +15,50 @@ interface IssueDrawerProps {
 
 export function IssueDrawer({ issue, record, onClose, onRunFix }: IssueDrawerProps) {
     const [fixPack, setFixPack] = useState<FixPack | null>(null);
+    const [diff, setDiff] = useState<ImpactedRecord | null>(null);
+    const [isApplied, setIsApplied] = useState(false);
 
     if (!issue || !record) return null;
 
     const handleGenerateValues = () => {
         const pack = generateFixPack(issue, record);
         setFixPack(pack);
+
+        // Simulate diff generation based on fix type
+        const changes = [];
+        if (issue.issue_type === 'SLA_BREACH_UNTOUCHED') {
+            changes.push({ field: 'last_touch_at', oldValue: record.last_touch_at, newValue: 'Now' });
+            changes.push({ field: 'owner', oldValue: record.owner, newValue: 'Antigravity' });
+        } else if (issue.issue_type === 'UNASSIGNED_OWNER') {
+            changes.push({ field: 'owner', oldValue: null, newValue: 'Antigravity' });
+        } else if (issue.issue_type === 'STALE_OPP') {
+            changes.push({ field: 'last_touch_at', oldValue: record.last_touch_at, newValue: 'Now' });
+            changes.push({ field: 'notes', oldValue: record.notes, newValue: (record.notes || '') + ' [Rescued]' });
+        } else if (issue.issue_type === 'DUPLICATE_SUSPECT') {
+            changes.push({ field: 'notes', oldValue: record.notes, newValue: (record.notes || '') + ' [Merged]' });
+            changes.push({ field: 'status', oldValue: 'Active', newValue: 'Archived (Merged)' });
+        } else if (issue.issue_type === 'NO_NEXT_STEP') {
+            changes.push({ field: 'next_step', oldValue: null, newValue: 'Follow up task' });
+        }
+
+        setDiff({
+            recordId: record.id,
+            changes: changes as any
+        });
     };
+
+    const handleApprove = () => {
+        if (!fixPack) return;
+        onRunFix(fixPack);
+        setIsApplied(true);
+        logAuditEvent('APPLY_FIX', `Applied fix ${fixPack.fix_id} to record ${record.id}`, record.id);
+    };
+
+    // Restore initial state on issue change
+    if (isApplied && fixPack && fixPack.fix_id !== `fix_${issue.issue_id}`) {
+        setIsApplied(false);
+        setFixPack(null);
+    }
 
     return (
         <div className="fixed inset-0 z-50 flex justify-end">
@@ -80,6 +120,8 @@ export function IssueDrawer({ issue, record, onClose, onRunFix }: IssueDrawerPro
                                     </div>
                                 </div>
 
+                                {diff && <FixPackPreview record={record} impactedRecord={diff} />}
+
                                 {fixPack.email_draft && (
                                     <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
                                         <h4 className="font-bold text-blue-900 mb-2 text-sm uppercase">Email Draft</h4>
@@ -90,24 +132,20 @@ export function IssueDrawer({ issue, record, onClose, onRunFix }: IssueDrawerPro
                                     </div>
                                 )}
 
-                                <div>
-                                    <h4 className="font-bold text-gray-700 mb-2 text-sm uppercase flex justify-between">
-                                        Automation Payload
-                                        <Copy size={14} className="cursor-pointer text-gray-400 hover:text-gray-600" />
-                                    </h4>
-                                    <pre className="bg-gray-900 text-gray-100 p-4 rounded-xl text-xs overflow-x-auto font-mono">
-                                        {JSON.stringify(fixPack.automation_payload, null, 2)}
-                                    </pre>
-                                </div>
-
-                                <div className="pt-4 sticky bottom-0 bg-white pb-6 border-t border-gray-100">
-                                    <button
-                                        onClick={() => onRunFix(fixPack)}
-                                        className="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-green-200 flex items-center justify-center gap-2 transition-transform active:scale-95"
-                                    >
-                                        <Slack /> Run Fix #1 (Live)
-                                    </button>
-                                    <p className="text-center text-xs text-gray-400 mt-2">Triggers Slack webhook & logs activity</p>
+                                <div className="pt-4 sticky bottom-0 bg-white pb-6 border-t border-gray-100 space-y-2">
+                                    {!isApplied ? (
+                                        <button
+                                            onClick={handleApprove}
+                                            className="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-green-200 flex items-center justify-center gap-2 transition-transform active:scale-95"
+                                        >
+                                            <ShieldCheck /> Approve & Apply Fix
+                                        </button>
+                                    ) : (
+                                        <button disabled className="w-full py-4 bg-gray-100 text-gray-400 rounded-xl font-bold text-lg flex items-center justify-center gap-2 cursor-not-allowed">
+                                            <CheckCircle /> Fix Applied
+                                        </button>
+                                    )}
+                                    <p className="text-center text-xs text-gray-400 mt-2">Triggers Slack webhook & logs to Audit Trail</p>
                                 </div>
                             </div>
                         )}

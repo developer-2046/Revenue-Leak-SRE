@@ -7,8 +7,9 @@ import { parseCSV } from '@/lib/csv';
 import { scanForLeaks } from '@/lib/scanner';
 import { estimateImpact } from '@/lib/estimator';
 import { calculateReliabilityMetrics, ReliabilityMetrics } from '@/lib/reliability';
-import { Upload, Database, AlertTriangle, ShieldAlert, Zap, Activity, TrendingDown } from 'lucide-react';
+import { Upload, Database, AlertTriangle, ShieldAlert, Zap, Activity, TrendingDown, History } from 'lucide-react';
 import { IssueDrawer } from '@/components/IssueDrawer';
+import { getAuditLog } from '@/lib/audit';
 
 export default function Home() {
     const [data, setData] = useState<FunnelRecord[]>([]);
@@ -249,7 +250,7 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Revenue Reliability Section (New) */}
+                {/* Revenue Reliability Section */}
                 {reliability && (
                     <div className="mb-8">
                         <div className="flex items-center gap-2 mb-4">
@@ -319,6 +320,44 @@ export default function Home() {
                                     )}
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Audit Log Panel */}
+                {reliability && (
+                    <div className="mb-8 bg-slate-800 rounded-xl shadow-lg border border-slate-700 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-700 flex items-center gap-2">
+                            <History className="text-slate-400" />
+                            <h2 className="text-lg font-bold text-slate-100">System Audit Log</h2>
+                        </div>
+                        <div className="p-0 max-h-60 overflow-y-auto">
+                            <table className="w-full text-left text-sm text-slate-300">
+                                <thead className="bg-slate-900/50 text-slate-400 font-medium font-mono text-xs uppercase sticky top-0 backdrop-blur-sm">
+                                    <tr>
+                                        <th className="px-6 py-3">Timestamp</th>
+                                        <th className="px-6 py-3">User</th>
+                                        <th className="px-6 py-3">Action</th>
+                                        <th className="px-6 py-3">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-700">
+                                    {getAuditLog().length === 0 ? (
+                                        <tr>
+                                            <td colSpan={4} className="px-6 py-8 text-center text-slate-500 italic">No actions recorded yet.</td>
+                                        </tr>
+                                    ) : (
+                                        getAuditLog().map(log => (
+                                            <tr key={log.id} className="hover:bg-slate-700/50 transition-colors">
+                                                <td className="px-6 py-3 font-mono text-xs text-slate-500">{new Date(log.timestamp).toLocaleTimeString()}</td>
+                                                <td className="px-6 py-3">{log.user}</td>
+                                                <td className="px-6 py-3 font-bold text-emerald-400">{log.action}</td>
+                                                <td className="px-6 py-3 text-slate-300">{log.details}</td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 )}
