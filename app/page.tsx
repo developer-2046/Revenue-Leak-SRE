@@ -264,37 +264,48 @@ export default function Home() {
                 {incident && incident.status === 'open' && (
                     <div className="space-y-6 animate-in fade-in duration-700">
                         {/* Summary Cards Row */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                             <IncidentHeader incident={incident} /> {/* This handles the big red card */}
-                            <div className="col-span-1 md:col-span-3 grid grid-cols-3 gap-4">
+                            <div className="col-span-1 md:col-span-3 grid grid-cols-3 gap-8">
                                 <ErrorBudgetWidget incident={incident} />
-                                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-center items-center">
-                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Saved Revenue</h3>
-                                    <p className="text-4xl font-black text-green-600 font-mono">+${savedRevenue.toLocaleString()}</p>
+                                <div className="bg-white p-8 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 flex flex-col justify-center items-center hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Saved Revenue</h3>
+                                    <p className="text-5xl font-black text-green-600 font-mono tracking-tighter">+${savedRevenue.toLocaleString()}</p>
                                 </div>
-                                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Leak Bingo</h3>
-                                    <div className="grid grid-cols-3 gap-2 text-xs">
-                                        <span className={bingoState.sla ? "text-red-600 font-bold line-through decoration-2" : "text-gray-300"}>SLA</span>
-                                        <span className={bingoState.stale ? "text-red-600 font-bold line-through decoration-2" : "text-gray-300"}>STALE</span>
-                                        <span className={bingoState.dupe ? "text-red-600 font-bold line-through decoration-2" : "text-gray-300"}>DUPE</span>
-                                        <span className={bingoState.owner ? "text-red-600 font-bold line-through decoration-2" : "text-gray-300"}>OWNER</span>
-                                        <span className={bingoState.hygiene ? "text-red-600 font-bold line-through decoration-2" : "text-gray-300"}>HYGIENE</span>
-                                        <span className={savedRevenue > 100000 ? "text-green-600 font-bold" : "text-gray-300"}>$$$</span>
+                                <div className="bg-white p-8 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Leak Bingo</h3>
+                                    <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-xs">
+                                        {/* Bingo Grid */}
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full ${bingoState.sla ? 'bg-red-500' : 'bg-gray-200'}`}></div>
+                                            <span className={bingoState.sla ? "text-gray-900 font-bold line-through decoration-red-500 decoration-2" : "text-gray-400"}>SLA Breach</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full ${bingoState.stale ? 'bg-red-500' : 'bg-gray-200'}`}></div>
+                                            <span className={bingoState.stale ? "text-gray-900 font-bold line-through decoration-red-500 decoration-2" : "text-gray-400"}>Stale Opp</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full ${bingoState.dupe ? 'bg-red-500' : 'bg-gray-200'}`}></div>
+                                            <span className={bingoState.dupe ? "text-gray-900 font-bold line-through decoration-red-500 decoration-2" : "text-gray-400"}>Duplication</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full ${bingoState.owner ? 'bg-red-500' : 'bg-gray-200'}`}></div>
+                                            <span className={bingoState.owner ? "text-gray-900 font-bold line-through decoration-red-500 decoration-2" : "text-gray-400"}>Owner Fix</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* SLO & Timeline Row */}
-                        <div className="grid grid-cols-12 gap-6">
-                            <div className="col-span-8 space-y-6">
+                        <div className="grid grid-cols-12 gap-8">
+                            <div className="col-span-8 space-y-8">
                                 {/* SLO Gauges */}
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-3 gap-8">
                                     {slos.map(slo => <SLOGauge key={slo.id} slo={slo} />)}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-2 gap-8">
                                     <TopCausesWidget causes={incident.top_causes} />
                                     <AffectedSegmentsWidget segments={incident.affected_segments} />
                                 </div>
