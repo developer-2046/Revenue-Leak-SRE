@@ -6,23 +6,29 @@ import { ShieldAlert, TrendingDown, CheckCircle, Flame, Users, Activity } from '
 
 export function TopCausesWidget({ causes }: { causes: { issue_type: string; count: number; at_risk_usd: number }[] }) {
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <Activity size={18} /> Top Causes
+        <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 p-6 hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+            <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-3 text-lg border-b border-gray-100 pb-3">
+                <div className="bg-rose-100 p-2 rounded-lg text-rose-600">
+                    <Activity size={20} />
+                </div>
+                Top Leak Causes
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
                 {causes.map((c, i) => (
-                    <div key={i} className="flex justify-between items-center border-b border-gray-50 last:border-0 pb-2">
+                    <div key={i} className="flex justify-between items-center group">
                         <div>
-                            <p className="font-medium text-sm text-gray-900">{c.issue_type}</p>
-                            <p className="text-xs text-gray-500">{c.count} records affected</p>
+                            <p className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{c.issue_type}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{c.count} records</span>
+                            </div>
                         </div>
-                        <div className="font-mono font-bold text-red-600 text-sm">
-                            -${c.at_risk_usd.toLocaleString()}
+                        <div className="text-right">
+                            <div className="font-mono font-bold text-rose-600">-${c.at_risk_usd.toLocaleString()}</div>
+                            <div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">Risk Impact</div>
                         </div>
                     </div>
                 ))}
-                {causes.length === 0 && <p className="text-sm text-gray-400 italic">No issues found.</p>}
+                {causes.length === 0 && <p className="text-sm text-gray-400 italic text-center py-4">No active issues detected.</p>}
             </div>
         </div>
     );
@@ -30,18 +36,26 @@ export function TopCausesWidget({ causes }: { causes: { issue_type: string; coun
 
 export function AffectedSegmentsWidget({ segments }: { segments: { key: string; value: string; at_risk_usd: number }[] }) {
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <Users size={18} /> Impact Blast Radius
+        <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 p-6 hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+            <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-3 text-lg border-b border-gray-100 pb-3">
+                <div className="bg-orange-100 p-2 rounded-lg text-orange-600">
+                    <Users size={20} />
+                </div>
+                Blast Radius
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
                 {segments.map((s, i) => (
-                    <div key={i} className="flex justify-between items-center border-b border-gray-50 last:border-0 pb-2">
-                        <div>
-                            <p className="font-medium text-sm text-gray-900">{s.value}</p>
-                            <p className="text-xs text-gray-500 uppercase">{s.key}</p>
+                    <div key={i} className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs uppercase">
+                                {s.value.substring(0, 2)}
+                            </div>
+                            <div>
+                                <p className="font-semibold text-gray-900">{s.value}</p>
+                                <p className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded inline-block uppercase font-bold tracking-wider">{s.key}</p>
+                            </div>
                         </div>
-                        <div className="font-mono font-bold text-orange-600 text-sm">
+                        <div className="font-mono font-bold text-orange-600">
                             -${s.at_risk_usd.toLocaleString()}
                         </div>
                     </div>
@@ -73,23 +87,36 @@ export function IncidentHeader({ incident }: { incident: Incident }) {
     };
 
     return (
-        <div className="bg-white border-l-8 border-red-600 rounded-r-xl shadow-lg p-6 mb-6 animate-in slide-in-from-top duration-500">
-            <div className="flex justify-between items-start">
-                <div>
-                    <div className="flex items-center gap-3 mb-2">
-                        <span className={`px-3 py-1 text-sm font-bold rounded uppercase ${severityColors[incident.severity]}`}>
-                            SEV {incident.severity}
-                        </span>
-                        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                            <Flame className="text-red-600 animate-pulse" />
-                            Active Revenue Incident: {incident.incident_id}
-                        </h2>
+    return (
+        <div className="bg-white border-l-8 border-red-500 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-8 mb-8 animate-in slide-in-from-top duration-500 relative overflow-hidden">
+
+            {/* Background Pattern */}
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-red-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+
+            <div className="flex justify-between items-start relative z-10">
+                <div className="flex gap-6 items-start">
+                    <div className="bg-red-100 p-4 rounded-2xl animate-pulse-subtle">
+                        <Flame className="text-red-600" size={32} />
                     </div>
-                    <p className="text-gray-500 text-sm font-mono">Started: {new Date(incident.created_at).toLocaleString()}</p>
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className={`px-4 py-1.5 text-sm font-black rounded-lg uppercase tracking-wide shadow-sm ${severityColors[incident.severity]}`}>
+                                SEV {incident.severity}
+                            </span>
+                            <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+                                Active Revenue Incident
+                            </h2>
+                        </div>
+                        <div className="flex items-center gap-4 text-gray-500 text-sm font-medium">
+                            <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-600">ID: {incident.incident_id}</span>
+                            <span>•</span>
+                            <span>Detected: {new Date(incident.created_at).toLocaleTimeString()}</span>
+                        </div>
+                    </div>
                 </div>
                 <div className="text-right">
-                    <p className="text-sm text-gray-400 uppercase tracking-wider font-semibold">Total Revenue At Risk</p>
-                    <p className="text-4xl font-bold text-red-600 font-mono tracking-tight">
+                    <p className="text-xs text-red-600/70 font-bold uppercase tracking-widest mb-1">Total Revenue At Risk</p>
+                    <p className="text-5xl font-black text-red-600 font-mono tracking-tighter">
                         -${incident.total_at_risk_usd.toLocaleString()}
                     </p>
                 </div>
@@ -112,26 +139,43 @@ export function ErrorBudgetWidget({ incident }: { incident: Incident }) {
     else if (pct < 50) color = 'bg-yellow-500';
 
     return (
-        <div className="bg-gray-900 text-white p-6 rounded-xl shadow-lg border border-gray-800">
-            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-4">Error Budget (Monthly)</h3>
+    return (
+        <div className="bg-gray-900 text-white p-6 rounded-xl shadow-2xl border border-gray-800 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
 
-            <div className="flex justify-between items-end mb-2">
-                <span className="text-3xl font-bold font-mono">${remaining.toLocaleString()}</span>
-                <span className={`text-xs px-2 py-1 rounded font-bold text-black ${pct < 25 ? 'bg-red-400' : 'bg-green-400'}`}>
-                    {Math.round(pct)}% LEFT
-                </span>
-            </div>
+            <div className="relative z-10 flex flex-col h-full justify-between">
+                <div>
+                    <h3 className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mb-6">Error Budget (Monthly)</h3>
 
-            <div className="w-full bg-gray-700 h-4 rounded-full overflow-hidden mb-4">
-                <div
-                    className={`h-full transition-all duration-700 ${color}`}
-                    style={{ width: `${pct}%` }}
-                />
-            </div>
+                    <div className="flex justify-between items-end mb-4">
+                        <div>
+                            <span className="text-4xl font-bold font-mono tracking-tighter block">${remaining.toLocaleString()}</span>
+                            <span className="text-xs text-gray-500 font-medium">Remaining Budget</span>
+                        </div>
+                        <span className={`text-xs px-3 py-1.5 rounded-lg font-bold text-black shadow transition-all ${pct < 25 ? 'bg-red-400' : 'bg-green-400'}`}>
+                            {Math.round(pct)}% HEALTH
+                        </span>
+                    </div>
 
-            <div className="flex justify-between text-xs text-gray-500 font-mono">
-                <span>TOTAL: ${budget.toLocaleString()}</span>
-                <span>USED: -${used.toLocaleString()}</span>
+                    <div className="w-full bg-gray-800 h-3 rounded-full overflow-hidden mb-6 shadow-inner ring-1 ring-white/10">
+                        <div
+                            className={`h-full transition-all duration-1000 ease-out ${color} shadow-[0_0_10px_currentColor]`}
+                            style={{ width: `${pct}%` }}
+                        />
+                    </div>
+                </div>
+
+                <div className="flex justify-between items-center text-xs text-gray-500 font-mono bg-gray-800/50 p-3 rounded-lg border border-white/5">
+                    <span className="flex flex-col">
+                        <span className="text-[9px] uppercase tracking-wider text-gray-600">Total</span>
+                        <span className="text-gray-300 font-bold">${budget.toLocaleString()}</span>
+                    </span>
+                    <div className="h-4 w-px bg-gray-700"></div>
+                    <span className="flex flex-col text-right">
+                        <span className="text-[9px] uppercase tracking-wider text-gray-600">Burned</span>
+                        <span className="text-red-400 font-bold">-${used.toLocaleString()}</span>
+                    </span>
+                </div>
             </div>
         </div>
     );
