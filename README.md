@@ -1,68 +1,51 @@
-# Revenue Leak SRE
+# Revenue Leak SRE - Hackathon Demo (2026)
 
-**Revenue Leak SRE** transforms your Go-To-Market (GTM) team into a Reliability Engineering discipline. 
-We treat **revenue leaks** (untouched leads, stale deals) as **incidents** that burn down an **Error Budget**.
+> **Metric**: 40% Impact, 30% Innovation, 20% Presentation, 10% People's Choice.
 
-## 🚀 The Vision
-Most RevOps tools are passive dashboards. We are an **Incident Command System**.
-1.  **Define SLOs**: "Leads must be touched in 30m". "Deals cannot sit in Proposal for > 7 days".
-2.  **Monitor Burn Rate**: If your team ignores leads, you burn your Revenue Error Budget.
-3.  **Page the Team**: When burn rate > 50%, we escalate to "Page" status.
-4.  **Auto-Remediate**: We generate **Fix Packs** (automation payloads) to resolve the incident instantly.
+## 🚀 The Pitch (30 Seconds)
+Revenue Leaks are "silent outages" in your GTM factory. We treat them like SRE incidents.
+Instead of dashboards people ignore, we use **SLOs**, **Error Budgets**, and **Fix Packs** to make revenue reliability deterministic.
 
-## 📸 Capabilities
--   **War Room**: Real-time view of Active Incidents, Burn Rate, and Impact Blast Radius.
--   **Fix Packs**: Automated resolution (e.g., "Assign Owner", "Rescue Stale Opp") with `git diff` style previews.
--   **Audit Log**: Immutable history of every action for compliance.
+## 🎥 How to Run the Demo
 
-## ⚡ Quick Start
-```bash
-# 1. Install
-git clone https://github.com/developer-2046/Revenue-Leak-SRE.git
-cd Revenue-Leak-SRE
-npm install
+1. **Start the App**: `npm run dev`
+2. **Open**: `http://localhost:3000`
+3. **Click "Start Demo Mode"**: This executes the "One-Click Wow" flow:
+   - Loads 20 sample records (SLA breaches, Stale Opps, Duplicates).
+   - Scans and detects $1.2M at risk.
+   - Triggers a "Severity 1" incident in the War Room.
+4. **Navigate**:
+   - Show the **SLO Gauges** (Lead Response 0% -> red).
+   - Show **Top Causes** and **Blast Radius** (Marketing & Sales affected).
+5. **Fix**:
+   - Click "View Fix" on the top issue.
+   - Show **Root Cause Guess** and **Fix Pack DSL Viewer** (the "code" behind the fix).
+   - Click **Generate Fix Pack**.
+   - Click **Approve & Apply**.
+6. **Verify**:
+   - Watch the **Saved Revenue Counter** go up.
+   - See the **Verification Report** confirm "No regressions".
+   - Toggle **Presentation Mode** for a clearer view.
 
-# 2. Run
-npm run dev
-# Open http://localhost:3000
-```
+## 🛠 Architecture & Innovation
 
-## 🎥 The "Must-Win" Demo
-1.  **Click "RUN FULL DEMO"** (Big Purple Button).
-2.  **War Room Activation**: Watch the dashboard transform into an Incident Command Center.
-    -   **SEV 1 Incident** declared.
-    -   **Budget at Risk** climbs.
-    -   **Paging State** hits "PAGE".
-3.  **Resolve**:
-    -   Click the top issue (Likely "Nakatomi Deal").
-    -   Review the **Fix Pack Preview** (Diff view).
-    -   Click **"Approve & Apply"**.
-4.  **Recovery**:
-    -   Watch the **Timeline** update.
-    -   See the **Error Budget** stabilize.
-    -   Incident resolves.
+### 1. Revenue SLOs & Error Budgets
+We mapped GTM metrics to SRE concepts:
+- **Lead Response Time** = Latency SLO
+- **Deal Stagnation** = Availability SLO (deal is "down" if stuck)
+- **Data Quality** = Error Rate SLO
 
-## 🏗 Architecture
-```mermaid
-graph TD
-    User -->|Inbound Data| UI[War Room]
-    UI -->|Records| Scanner[Rules Engine]
-    Scanner -->|Issues| Reliability[Reliability Model]
-    
-    Reliability -->|Burn Rate| Budget[Error Budget]
-    Reliability -->|Paging| Alerts[Paging State]
-    
-    UI -->|Generate Fix| FixGen[Fix Generator]
-    FixGen -->|Proposed Diff| Preview[Fix Preview]
-    Preview -->|Apply Fix| Mutator[Record Mutator]
-    Mutator -->|Update| UI
-    Mutator -->|Log| Audit[Audit Log]
-    Mutator -->|Alert| Slack[Slack Webhook]
-```
+### 2. Fix Pack DSL
+Fixes are defined as code (`lib/fixpack-dsl.ts`), allowing:
+- **Dry Runs**: Simulate the blast radius before applying.
+- **Audit Logs**: Traceability of every revenue operation.
+- **Version Control**: Infrastructure-as-Code for GTM logic.
 
-## 🧪 Quality Gates
--   **Tests**: `npm run test` (Vitest covering Logic, Rules, Impact)
--   **Lint**: `npm run lint`
--   **CI**: GitHub Actions workflow enabled.
+### 3. Impact Estimation
+We don't just count records; we price them based on stage probability and deal value, giving a "Revenue at Risk" dollar amount that Executives care about.
 
-See [docs/RELIABILITY_MODEL.md](docs/RELIABILITY_MODEL.md) for the math behind the metrics.
+## ✅ Technology Stack
+- **Next.js 16** (App Router)
+- **TypeScript** (Strict Mode)
+- **Tailwind CSS** (Vibe & Polish)
+- **Vitest** (Unit Testing Rules)

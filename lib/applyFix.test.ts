@@ -13,7 +13,7 @@ describe('Apply Fix Logic', () => {
             { id: '1', name: 'Test', last_touch_at: null, next_step: null, owner: null } as any
         ];
         const fixPack: FixPack = {
-            fix_id: 'fix_1', title: 'Test Fix', steps: [],
+            fix_id: 'fix_1', title: 'Test Fix', steps: [], workflow_steps: [],
             automation_payload: { record_id: '1', action_type: 'SLA_BREACH_FIX' }
         };
 
@@ -30,7 +30,7 @@ describe('Apply Fix Logic', () => {
             { id: '1', name: 'Dupe', notes: 'Original', stage: 'New' } as any
         ];
         const fixPack: FixPack = {
-            fix_id: 'fix_1', title: 'Test Fix', steps: [],
+            fix_id: 'fix_1', title: 'Test Fix', steps: [], workflow_steps: [],
             automation_payload: { record_id: '1', action_type: 'MERGE_DUPLICATE' }
         };
 
@@ -43,7 +43,7 @@ describe('Apply Fix Logic', () => {
     it('should log an event to IncidentManager', () => {
         const records: FunnelRecord[] = [{ id: '1' } as any];
         const fixPack: FixPack = {
-            fix_id: 'fix_1', title: 'Test Fix', steps: [],
+            fix_id: 'fix_1', title: 'Test Fix', steps: [], workflow_steps: [],
             automation_payload: { record_id: '1', action_type: 'ASSIGN_OWNER' }
         };
         applyFixPack(records, fixPack);

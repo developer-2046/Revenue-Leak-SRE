@@ -30,12 +30,35 @@ export interface LeakIssue {
     suggested_fix_id: string;
     estimated_loss_usd: number;
     confidence: number; // 0-1
+    // New fields for Hackathon
+    root_cause_guess?: string;
+    blast_radius?: string[]; // Teams affected
+    associated_slo?: string; // ID of the SLO
+    error_budget_impact?: number; // How much budget this burns
+}
+
+export interface SLO {
+    id: string;
+    name: string;
+    target: number; // e.g., 0.99
+    current: number; // e.g., 0.95
+    error_budget_total_usd: number;
+    description: string;
+}
+
+export type DSLAction = 'identify_records' | 'write_back_task' | 'notify_slack' | 'draft_email' | 'create_followup_sequence' | 'dedupe_merge_suggestion' | 'reassign_owner' | 'add_next_step' | 'set_sla_timer';
+
+export interface FixPackStep {
+    action: DSLAction;
+    params: Record<string, any>; // Flexible inputs
+    description: string;
 }
 
 export interface FixPack {
     fix_id: string;
     title: string;
-    steps: string[];
+    workflow_steps: FixPackStep[]; // The DSL steps
+    steps: string[]; // Legacy human readable steps (keep for compat or generate from workflow)
     automation_payload: any;
     verification_check?: string;
     email_draft?: {

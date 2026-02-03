@@ -3,7 +3,7 @@ import { LeakIssue, FunnelRecord, FixPack } from '@/lib/types';
 import { generateFixPack } from '@/lib/fix-generator';
 import { X, Zap, CheckCircle, Copy, Slack, ShieldCheck, History } from 'lucide-react';
 import { FixPackPreview } from './FixPackPreview';
-import { ImpactedRecord } from '@/lib/fixpack'; // Use new types
+import { ImpactedRecord } from '@/lib/fixpack';
 import { logAuditEvent } from '@/lib/audit';
 
 interface IssueDrawerProps {
@@ -39,6 +39,8 @@ export function IssueDrawer({ issue, record, onClose, onRunFix }: IssueDrawerPro
             changes.push({ field: 'status', oldValue: 'Active', newValue: 'Archived (Merged)' });
         } else if (issue.issue_type === 'NO_NEXT_STEP') {
             changes.push({ field: 'next_step', oldValue: null, newValue: 'Follow up task' });
+        } else {
+            changes.push({ field: 'notes', oldValue: record.notes, newValue: (record.notes || '') + ' [Fixed]' });
         }
 
         setDiff({
@@ -79,13 +81,29 @@ export function IssueDrawer({ issue, record, onClose, onRunFix }: IssueDrawerPro
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-8">
                     {/* Context Card */}
-                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-100">
+                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-100 mb-4">
                         <h3 className="text-sm font-bold text-orange-800 uppercase tracking-wide mb-2">Why this matters</h3>
-                        <p className="text-gray-900 mb-2">{issue.explanation}</p>
-                        <div className="flex justify-between items-end mt-4">
+                        <p className="text-gray-900 mb-4">{issue.explanation}</p>
+
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <span className="text-xs text-orange-700/70 font-bold uppercase">Root Cause Guess</span>
+                                <p className="font-semibold text-orange-900">{issue.root_cause_guess || 'Unknown'}</p>
+                            </div>
+                            <div>
+                                <span className="text-xs text-orange-700/70 font-bold uppercase">Blast Radius</span>
+                                <p className="font-semibold text-orange-900">{issue.blast_radius?.join(', ') || 'None'}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-end border-t border-orange-200 pt-3">
                             <div>
                                 <span className="text-xs text-gray-500 uppercase">Estimated Loss</span>
                                 <p className="text-2xl font-bold text-rose-600">${issue.estimated_loss_usd?.toLocaleString()}</p>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-xs text-gray-500 uppercase">Budget Impact</span>
+                                <p className="text-sm font-mono font-bold text-gray-700">{issue.error_budget_impact ? `-${issue.error_budget_impact} pts` : 'N/A'}</p>
                             </div>
                         </div>
                     </div>
@@ -120,7 +138,7 @@ export function IssueDrawer({ issue, record, onClose, onRunFix }: IssueDrawerPro
                                     </div>
                                 </div>
 
-                                {diff && <FixPackPreview record={record} impactedRecord={diff} />}
+                                {diff && <FixPackPreview record={record} impactedRecord={diff} steps={fixPack.workflow_steps} />}
 
                                 {fixPack.email_draft && (
                                     <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">

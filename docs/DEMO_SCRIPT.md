@@ -1,33 +1,37 @@
-# The "Revenue Incident Command" Demo Script (10 Mins)
+# Hackathon Demo Script (10 Mins max)
 
-**Narrative**: "Sales Leaders don't need more charts. They need a Site Reliability Engineer for their Revenue."
+## Phase 1: The Hook (0:00 - 1:00)
+- **Speaker**: "Revenue leaks are just system outages that we haven't instrumented yet. Today, we bring SRE discipline to the GTM stack."
+- **Action**: Open App. It's clean, empty.
+- **Action**: Click **"Start Demo Mode"**.
+- **Voiceover**: "In one click, we mount the entire funnel, scan for reliability issues, and declare a Revenue Incident."
+- **Effect**: War Room banner drops down. Siren pulses. Red numbers everywhere.
 
-## Part 1: The Setup (2 mins)
-1.  **Open Empty Dashboard**: "This is the calm before the storm. Right now, we're monitoring the funnel."
-2.  **Pitch SLOs**: "We set a Service Level Objective: 30 minutes to lead response. 7 Days for Deal Velocity."
+## Phase 2: Diagnose (1:00 - 3:00)
+- **Speaker**: "We don't just list rows. We calculate Revenue at Risk and Blast Radius."
+- **Action**: Hover over **SLO Gauges**.
+- **Voiceover**: "Our 'Lead Response' SLO is breached. our 'Deal Velocity' Error Budget is exhausted."
+- **Action**: Point to **Top Causes** widget.
+- **Voiceover**: "The root cause isn't 'bad reps', it's a 'Capacity Bottleneck' in the SDR team, affecting $500k pipeline."
 
-## Part 2: The Incident (3 mins)
-1.  **Action**: Click **"RUN FULL DEMO"**.
-2.  **Visual**: The **War Room** activates.
-    -   **Title**: "Active Revenue Incident (SEV 1)" flashes.
-    -   **Sound/Motion**: (Simulated via visuals) "We just detected $200k at risk. Burn Rate is 300%."
-3.  **Explain Error Budget**: "We have a $50k monthly loss tolerance. We just burned through it in 5 seconds."
+## Phase 3: Remediate (3:00 - 6:00)
+- **Speaker**: "Now, let's fix it with code."
+- **Action**: Click "View Fix" on the top 'SLA Breach' issue.
+- **Action**: Show **Root Cause Guess** in the drawer.
+- **Action**: Scroll to **Fix Pack DSL Viewer**.
+- **Voiceover**: "Here is the 'Fix Pack'. It's not a black box. It's a deterministic workflow defined in TypeScript."
+- **Action**: Click **Generate Fix Pack**.
+- **Action**: Click **Approve & Apply**.
+- **Effect**: Loading state -> Success -> **Verification Report** Modal appears.
 
-## Part 3: The Investigation (2 mins)
-1.  **Top Causes**: "Look at the blast radius. It's mostly Stale Deals in North America."
-2.  **Trace**: Scroll the **Timeline Panel**. "Detected at 10:00 AM. 50 records affected."
+## Phase 4: Verify & Close (6:00 - 8:00)
+- **Speaker**: "We verified the fix in simulation. No regressions."
+- **Action**: Dismiss modal.
+- **Action**: Point to **Saved Revenue Counter** (Top right).
+- **Voiceover**: "We just recovered $150k in pipeline value mechanically."
+- **Action**: Toggle **Presentation Mode** button (Monitor icon).
+- **Voiceover**: "This is Revenue Leak SRE. Production reliability for your revenue engine."
 
-## Part 4: The Fix (3 mins)
-1.  **Select High Severity Issue**: Click on "Nakatomi Deal ($150k)".
-2.  **Fix Pack Preview**:
-    -   "We don't just email people. We patch the data."
-    -   "Here is the code diff. We are re-assigning ownership and resetting the last touch clock."
-3.  **Action**: Click **"Approve & Apply"**.
-4.  **Reaction**:
-    -   Toast: "Fix Applied."
-    -   **Timeline**: "Fix Applied to Record 103".
-    -   **Budget Widget**: "Burn Rate drops to 0% (Simulated recovery)".
-    -   Incident resolves. "All Systems Nominal."
-
-## Part 5: The "So What?" (Conclusion)
-"You wouldn't run a server without SRE. Why run a $100M revenue engine without it?"
+## Phase 5: Q&A / Backup
+- If asked about integrations: "We support CSV import for the hackathon, but the `Scanner` is designed to be an Adapter pattern for Salesforce/HubSpot APIs."
+- If asked about "Blast Radius": "It scans the 'Owner' and 'Team' fields to map graph dependencies."

@@ -1,14 +1,19 @@
 import { LeakIssue, FunnelRecord, FixPack } from './types';
 import { CONSTANTS } from './constants';
+import { generateDSLForFix } from './fixpack-dsl';
 
 export function generateFixPack(issue: LeakIssue, record: FunnelRecord): FixPack {
     const pack: FixPack = {
         fix_id: `fix_${issue.issue_id}`,
         title: '',
+        workflow_steps: [],
         steps: [],
         automation_payload: {},
         verification_check: '',
     };
+
+    // Generate DSL steps
+    pack.workflow_steps = generateDSLForFix(issue.suggested_fix_id, record);
 
     switch (issue.issue_type) {
         case 'SLA_BREACH_UNTOUCHED':
