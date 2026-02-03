@@ -92,14 +92,44 @@ export default function Home() {
         IncidentManager.addEvent('MANUAL_NOTE', 'Started Deterministic Demo Sequence');
 
         // 1. Load Data
-        const res = await fetch('/demo_funnel.csv'); // Make sure this exists in public/ or handle accordingly
-        let csvText = await res.text();
+        let csvText = '';
+        try {
+            const res = await fetch('/demo_funnel.csv');
+            if (res.ok) {
+                const text = await res.text();
+                // Basic validation
+                if (text && !text.trim().startsWith('<!DOCTYPE')) {
+                    csvText = text;
+                }
+            }
+        } catch (e) {
+            console.warn("Demo fetch failed, using fallback", e);
+        }
 
-        // Fallback if fetch fails (e.g. valid in some local setups)
-        if (!csvText || csvText.includes('<!DOCTYPE')) {
-            console.error("Failed to load demo csv, using hardcoded fallback");
-            // Minimal fallback or re-trigger file upload
-            return;
+        // Fallback Data
+        if (!csvText) {
+            console.log("Using embedded fallback data");
+            csvText = `id,type,name,email,domain,company,source,region,owner,stage,created_at,last_touch_at,next_step,value_usd,notes
+101,lead,Sarah Connor,sarah@sky.net,sky.net,Skynet Cyberdyne,inbound,NA,,New,2023-10-25T08:00:00Z,,,5000,Urgent inquiry - SLA Breach
+102,lead,John Doe,jdoe@acme.com,acme.com,Acme Corp,web,NA,Alice,Qualified,2023-10-26T09:00:00Z,2023-10-26T09:30:00Z,Follow up call,10000,
+103,opp,Nakatomi Deal,hans@gruber.inc,gruber.inc,Nakatomi Plaza,outbound,NA,Alice,Negotiation,2023-09-01T10:00:00Z,2023-09-05T10:00:00Z,,150000,Stale Opp - No touch 45 days
+104,lead,Ellen Ripley,ellen@weyland.yutani,weyland.yutani,Weyland Yutani,referral,EMEA,,New,2023-10-24T10:00:00Z,,,1200,Unassigned and untouched
+105,lead,E. Ripley,eripley@weyland.yutani,weyland.yutani,Weyland Yutani,web,EMEA,Bob,New,2023-10-25T11:00:00Z,2023-10-25T11:05:00Z,Qualify,1200,Duplicate of 104
+106,opp,Stark Industries,tony@stark.com,stark.com,Stark Ind,upsell,NA,Bob,Proposal,2023-10-10T10:00:00Z,2023-10-12T10:00:00Z,,200000,Missing Next Step
+107,lead,Bruce Wayne,bruce@wayne.ent,wayne.ent,Wayne Enterprises,event,NA,Charlie,New,2023-10-26T12:00:00Z,,,50000,Fresh lead - OK
+108,opp,Initech Upgrade,peter@initech.com,initech.com,Initech,inbound,NA,Alice,Discovery,2023-10-20T14:00:00Z,2023-10-20T14:30:00Z,Demo scheduled,25000,
+109,lead,Neo Anderson,neo@matrix.org,matrix.org,The Matrix,web,APAC,,New,2023-10-23T08:00:00Z,,,8000,Unassigned - Routing Issue
+110,opp,Tyrell Corp AI,eldon@tyrell.com,tyrell.com,Tyrell Corp,outbound,NA,Dave,Closed Won,2023-08-01T10:00:00Z,2023-08-15T10:00:00Z,Onboarding,500000,Won - Ignore
+111,opp,Massive Dynamic,bell@massive.dyn,massive.dyn,Massive Dynamic,referral,NA,Bob,Negotiation,2023-09-15T10:00:00Z,2023-09-20T10:00:00Z,,75000,Stale > 30 days
+112,lead,Roy Batty,roy@tyrell.com,tyrell.com,Tyrell Corp,web,NA,,New,2023-10-26T13:00:00Z,,,0,Unassigned lead for existing customer
+113,lead,Deckard,rick@lapd.gov,lapd.gov,LAPD,referral,NA,Alice,Qualified,2023-10-22T09:00:00Z,2023-10-22T09:30:00Z,,2000,Missing Next Step
+114,opp,Cyberpunk 2077,v@nightcity.net,nightcity.net,Arasaka,inbound,APAC,Charlie,Proposal,2023-10-01T10:00:00Z,2023-10-15T10:00:00Z,Contract review,90000,
+115,lead,GLaDOS,glados@aperture.sci,aperture.sci,Aperture Science,web,NA,,New,2023-10-21T08:00:00Z,,,15000,Untouched > 4 days (SLA Breach)
+116,opp,Black Mesa,gordon@blackmesa.org,blackmesa.org,Black Mesa,outbound,NA,Bob,Discovery,2023-10-05T10:00:00Z,2023-10-05T10:30:00Z,,40000,Missing Next Step
+117,lead,Chell,chell@aperture.sci,aperture.sci,Aperture Science,referral,NA,Alice,New,2023-10-25T14:00:00Z,2023-10-25T14:10:00Z,Qualify,15000,Duplicate of 115 domain
+118,opp,Umbrella Corp,wesker@umbrella.com,umbrella.com,Umbrella Corp,bound,EMEA,Charlie,Negotiation,2023-09-10T10:00:00Z,2023-09-12T10:00:00Z,,300000,Stale High Value
+119,lead,Leon Kennedy,leon@rpd.gov,rpd.gov,RPD,web,NA,Dave,Qualified,2023-10-26T10:00:00Z,2023-10-26T10:30:00Z,Demo,5000,
+120,lead,Jill Valentine,jill@stars.org,stars.org,STARS,referral,EMEA,,New,2023-10-20T08:00:00Z,,,3000,Unassigned - Forgotten`;
         }
 
         const parsed = parseCSV(csvText);
