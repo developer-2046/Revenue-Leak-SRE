@@ -86,7 +86,7 @@ function isClosed(stage: string | null | undefined) {
 
 function createIssue(record: FunnelRecord, type: string, severity: number, severityLabel: IssueSeverity, explanation: string, fixId: string, slo?: string, rootCause?: string, blastRadius: string[] = []): LeakIssue {
     return {
-        issue_id: uuidv4(),
+        issue_id: `${record.id}_${type}`,
         record_id: record.id,
         issue_type: type,
         severity,
