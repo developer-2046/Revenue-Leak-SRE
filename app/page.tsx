@@ -6,7 +6,7 @@ import { generateSampleData } from '@/lib/sample-data';
 import { parseCSV } from '@/lib/csv';
 import { scanForLeaks } from '@/lib/scanner';
 import { estimateImpact } from '@/lib/estimator';
-import { Upload, Database, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Upload, Database, AlertTriangle, ShieldAlert, Zap } from 'lucide-react';
 import { IssueDrawer } from '@/components/IssueDrawer';
 
 export default function Home() {
@@ -21,6 +21,83 @@ export default function Home() {
         const sample = generateSampleData();
         setData(sample);
         setIssues([]);
+    };
+
+    const handleInjectChaos = () => {
+        if (data.length === 0) {
+            alert("Load data first before injecting chaos.");
+            return;
+        }
+        const chaosData = [...data];
+        const now = new Date();
+
+        // 10 inbound leads, no owner, old
+        for (let i = 0; i < 10; i++) {
+            chaosData.push({
+                id: `chaos_lead_${i}`,
+                type: 'lead',
+                name: `Chaos Lead ${i}`,
+                email: `chaos${i}@test.com`,
+                domain: `test${i}.com`,
+                company: `Chaos Co ${i}`,
+                source: 'inbound',
+                region: 'NA',
+                owner: null,
+                stage: 'New',
+                created_at: new Date(now.getTime() - 1000 * 60 * 120).toISOString(), // 2 hours ago
+                last_touch_at: null,
+                next_step: null,
+                value_usd: 2000,
+                notes: 'Chaos injected'
+            });
+        }
+
+        // 3 Duplicates from existing
+        if (chaosData.length > 3) {
+            chaosData.push({ ...chaosData[0], id: 'chaos_dupe_1', domain: chaosData[0].domain });
+            chaosData.push({ ...chaosData[1], id: 'chaos_dupe_2', domain: chaosData[1].domain });
+            chaosData.push({ ...chaosData[2], id: 'chaos_dupe_3', domain: chaosData[2].domain });
+        }
+
+        // 2 Stale Opps
+        chaosData.push({
+            id: 'chaos_stale_1',
+            type: 'opp',
+            name: 'Stale Whale Deal',
+            email: 'whale@ocean.com',
+            domain: 'ocean.com',
+            company: 'Ocean Corp',
+            source: 'outbound',
+            region: 'NA',
+            owner: 'Bob',
+            stage: 'Proposal',
+            created_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+            last_touch_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 15).toISOString(), // 15 days ago
+            next_step: 'Waiting',
+            value_usd: 80000,
+            notes: 'Chaos injected'
+        });
+        chaosData.push({
+            id: 'chaos_stale_2',
+            type: 'opp',
+            name: 'Forgotten Renewals',
+            email: 'old@legacy.com',
+            domain: 'legacy.com',
+            company: 'Legacy Inc',
+            source: 'upsell',
+            region: 'EMEA',
+            owner: 'Alice',
+            stage: 'Negotiation',
+            created_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+            last_touch_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 10).toISOString(), // 10 days ago
+            next_step: 'Contract sent',
+            value_usd: 12000,
+            notes: 'Chaos injected'
+        });
+
+        setData(chaosData);
+        alert('🔥 Chaos Injected! Run scan to see the damage.');
+        setIssues([]); // Reset scan
     };
 
     const handleScan = () => {
@@ -67,10 +144,8 @@ export default function Home() {
         // 2. Apply Fix Locally to Demo "After" State
         const issue = issues.find(i => i.issue_id === selectedIssueId);
         if (issue) {
-            let recordName = '';
             const newData = data.map(r => {
                 if (r.id !== issue.record_id) return r;
-                recordName = r.name;
 
                 const copy = { ...r };
                 if (issue.issue_type === 'SLA_BREACH_UNTOUCHED') {
@@ -82,10 +157,7 @@ export default function Home() {
                     copy.last_touch_at = new Date().toISOString();
                     copy.notes = (copy.notes || '') + ' [Rescued]';
                 } else if (issue.issue_type === 'DUPLICATE_SUSPECT') {
-                    // Mark as merged
                     copy.notes = (copy.notes || '') + ' [Merged]';
-                    // Ideally we remove it, but showing it as resolved (maybe severity drops?) is also fine.
-                    // Let's remove it to show "Leaks count goes down"
                     return null;
                 } else if (issue.issue_type === 'NO_NEXT_STEP') {
                     copy.next_step = 'Follow up task created';
@@ -133,6 +205,15 @@ export default function Home() {
                         <Database size={16} />
                         Load Messy Funnel
                     </button>
+                    {data.length > 0 && (
+                        <button
+                            onClick={handleInjectChaos}
+                            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md shadow-sm hover:bg-orange-700 text-sm font-medium transition-colors"
+                        >
+                            <Zap size={16} />
+                            Inject Chaos
+                        </button>
+                    )}
                 </div>
             </header>
 
