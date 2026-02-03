@@ -138,7 +138,6 @@ export function ErrorBudgetWidget({ incident }: { incident: Incident }) {
     else if (pct < 50) color = 'bg-yellow-500';
 
     return (
-    return (
         <div className="bg-gray-900 text-white p-6 rounded-xl shadow-2xl border border-gray-800 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
 
