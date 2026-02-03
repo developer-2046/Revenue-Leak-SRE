@@ -6,6 +6,4 @@ id,type,name,email,domain,company,source,region,owner,stage,created_at,last_touc
 105,lead,Duplicate D. Dave,dave@dupe.com,dupe.com,Dupe Corp,web,APAC,Charlie,New,2023-10-26T10:00:00Z,,,1500,Duplicate 1
 106,lead,Duplicate D. Dave,dave.d@dupe.com,dupe.com,Dupe Corp,web,APAC,Charlie,New,2023-10-26T10:05:00Z,,,1500,Duplicate 2
 107,opp,Stark Industries,tony@stark.com,stark.com,Stark Ind,upsell,NA,Bob,Proposal,2023-10-10T10:00:00Z,2023-10-12T10:00:00Z,,250000,Missing Next Step
-108,lead,Marty McFly,marty@future.com,future.com,Hill Valley,inbound,NA,Alice,New,2023-10-26T11:00:00Z,2023-10-26T11:05:00Z,Call,1000,Healthy
-109,lead,Doc Brown,doc@future.com,future.com,Hill Valley,inbound,NA,Alice,New,2023-10-26T11:10:00Z,2023-10-26T11:15:00Z,Demo,1000,Healthy
 110,opp,Cyberdyne Systems,miles@cyberdyne.com,cyberdyne.com,Cyberdyne,enterprise,NA,,Discovery,2023-10-20T10:00:00Z,2023-10-20T12:00:00Z,Assessment,50000,Unassigned Opp

@@ -1,164 +1,111 @@
 'use client';
 
-import { useState } from 'react';
-import { FunnelRecord, LeakIssue, FixPack } from '@/lib/types';
+import { useState, useEffect } from 'react';
+import { FunnelRecord, LeakIssue, FixPack, Incident, TimelineEvent } from '@/lib/types';
 import { generateSampleData } from '@/lib/sample-data';
 import { parseCSV } from '@/lib/csv';
 import { scanForLeaks } from '@/lib/scanner';
-import { estimateImpact } from '@/lib/estimator';
+import { estimateImpact } from '@/lib/estimator'; // Note: Ensure only one import
 import { calculateReliabilityMetrics, ReliabilityMetrics } from '@/lib/reliability';
-import { Upload, Database, AlertTriangle, ShieldAlert, Zap, Activity, TrendingDown, History, PlayCircle } from 'lucide-react';
+import { calculateImpact } from '@/lib/impact';
+import { computeIncident, IncidentManager } from '@/lib/incident';
+import { applyFixPack } from '@/lib/applyFix';
+import { generateFixPack } from '@/lib/fix-generator';
+import { Upload, Database, AlertTriangle, ShieldAlert, Zap, Activity, TrendingDown, History, PlayCircle, Siren } from 'lucide-react';
 import { IssueDrawer } from '@/components/IssueDrawer';
-import { getAuditLog } from '@/lib/audit';
-import Papa from 'papaparse';
+import { getAuditLog, logAuditEvent } from '@/lib/audit';
+import { IncidentHeader, ErrorBudgetWidget, TimelinePanel, TopCausesWidget, AffectedSegmentsWidget } from '@/components/WarRoom';
 
 export default function Home() {
     const [data, setData] = useState<FunnelRecord[]>([]);
     const [issues, setIssues] = useState<LeakIssue[]>([]);
     const [reliability, setReliability] = useState<ReliabilityMetrics | null>(null);
+    const [incident, setIncident] = useState<Incident | null>(null);
+    const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
     const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+    const [demoActive, setDemoActive] = useState(false);
 
     const selectedIssue = issues.find(i => i.issue_id === selectedIssueId) || null;
     const selectedRecord = selectedIssue ? data.find(r => r.id === selectedIssue.record_id) || null : null;
 
+    // Refresh Timeline Interval
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTimeline([...IncidentManager.getTimeline()]);
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const runAnalysis = (records: FunnelRecord[]) => {
+        // 1. Scan
+        const found = scanForLeaks(records);
+
+        // 2. Estimate Impact (Advanced)
+        const priced = found.map(issue => {
+            const r = records.find(rec => rec.id === issue.record_id);
+            if (!r) return issue;
+            const loss = calculateImpact(r, issue.issue_type);
+            return { ...issue, estimated_loss_usd: loss };
+        });
+
+        setIssues(priced);
+
+        // 3. Reliability & Incident
+        const totalRisk = priced.reduce((acc, curr) => acc + (curr.estimated_loss_usd || 0), 0);
+        setReliability(calculateReliabilityMetrics(records, totalRisk));
+
+        const newIncident = computeIncident(priced, records);
+        setIncident(newIncident);
+    };
+
     const handleLoadSample = () => {
         const sample = generateSampleData();
         setData(sample);
-        setIssues([]);
-        setReliability(null);
+        runAnalysis(sample);
     };
 
     const handleRunFullDemo = async () => {
-        // 1. Load Deterministic Data
-        const res = await fetch('/demo_funnel.csv'); // We need to move csv to public/ or just import it string-wise if lazy
-        // Since Next.js public folder is easy, let's assume we can fetch it, OR we just inline the string for robustness
-        // For hackathon reliability: Inline variables or hardcode logic.
-        // Let's use a hardcoded set that matches the CSV content to avoid file fetch issues in different envs
-        const demoData: FunnelRecord[] = [
-            { id: '101', type: 'lead', name: 'Sarah Connor', email: 'sarah@sky.net', domain: 'sky.net', company: 'Skynet', source: 'inbound', region: 'NA', owner: null, stage: 'New', created_at: new Date(Date.now() - 3600000 * 2).toISOString(), last_touch_at: null, next_step: null, value_usd: 5000, notes: null },
-            { id: '103', type: 'opp', name: 'Nakatomi Deal', email: 'hans@gruber.com', domain: 'gruber.com', company: 'Nakatomi', source: 'outbound', region: 'NA', owner: 'Alice', stage: 'Negotiation', created_at: new Date(Date.now() - 86400000 * 45).toISOString(), last_touch_at: new Date(Date.now() - 86400000 * 40).toISOString(), next_step: null, value_usd: 150000, notes: null },
-            { id: '105', type: 'lead', name: 'Duplicate Dave', email: 'dave@dupe.com', domain: 'dupe.com', company: 'Dupe Corp', source: 'web', region: 'APAC', owner: 'Charlie', stage: 'New', created_at: new Date().toISOString(), last_touch_at: null, next_step: null, value_usd: 1500, notes: null }
-        ];
-        // Note: For a real file read validation logic I would read the file component-side if uploaded. 
-        // But for "Demo Mode" hardcoded reliability is king.
+        setDemoActive(true);
+        IncidentManager.clear();
+        IncidentManager.addEvent('MANUAL_NOTE', 'Started Deterministic Demo Sequence');
 
-        setData(demoData);
-        setIssues([]);
-        setReliability(null);
+        // 1. Load Data
+        const res = await fetch('/demo_funnel.csv');
+        let csvText = await res.text();
+        if (!csvText || csvText.includes('<!DOCTYPE')) {
+            // Fallback if fetch fails or returns HTML (Next.js public folder issue maybe)
+            // Using hardcoded fallback for robustness
+            csvText = `id,type,name,email,domain,company,source,region,owner,stage,created_at,last_touch_at,next_step,value_usd,notes
+101,lead,Sarah Connor,sarah@sky.net,sky.net,Skynet Cyberdyne,inbound,NA,,New,2023-10-25T08:00:00Z,,,5000,Urgent inquiry - SLA Breach
+103,opp,Nakatomi Deal,hans@gruber.inc,gruber.inc,Nakatomi Plaza,outbound,NA,Alice,Negotiation,2023-09-01T10:00:00Z,2023-09-05T10:00:00Z,,150000,Stale Opp - No touch 45 days
+104,lead,Ellen Ripley,ellen@weyland.yutani,weyland.yutani,Weyland Yutani,referral,EMEA,,New,2023-10-24T10:00:00Z,,,1200,Unassigned and untouched
+107,opp,Stark Industries,tony@stark.com,stark.com,Stark Ind,upsell,NA,Bob,Proposal,2023-10-10T10:00:00Z,2023-10-12T10:00:00Z,,200000,Missing Next Step`;
+        }
 
-        // 2. Auto Scan after delay
+        const parsed = parseCSV(csvText);
+        setData(parsed);
+        runAnalysis(parsed);
+
+        // 2. Identify Top Issue & Generate Fix
         setTimeout(() => {
-            const foundIssues = scanForLeaks(demoData);
-            const pricedIssues = estimateImpact(foundIssues, demoData);
-            setIssues(pricedIssues);
-            setReliability(calculateReliabilityMetrics(demoData));
-
-            // 3. Highlight the biggest issue
-            const biggest = pricedIssues.sort((a, b) => b.estimated_loss_usd - a.estimated_loss_usd)[0];
-            if (biggest) {
-                setSelectedIssueId(biggest.issue_id);
-            }
-        }, 800);
-    };
-
-    const handleInjectChaos = () => {
-        if (data.length === 0) {
-            alert("Load data first before injecting chaos.");
-            return;
-        }
-        const chaosData = [...data];
-        const now = new Date();
-
-        // 10 inbound leads, no owner, old
-        for (let i = 0; i < 10; i++) {
-            chaosData.push({
-                id: `chaos_lead_${i}`,
-                type: 'lead',
-                name: `Chaos Lead ${i}`,
-                email: `chaos${i}@test.com`,
-                domain: `test${i}.com`,
-                company: `Chaos Co ${i}`,
-                source: 'inbound',
-                region: 'NA',
-                owner: null,
-                stage: 'New',
-                created_at: new Date(now.getTime() - 1000 * 60 * 120).toISOString(), // 2 hours ago
-                last_touch_at: null,
-                next_step: null,
-                value_usd: 2000,
-                notes: 'Chaos injected'
+            const currentIssues = scanForLeaks(parsed); // Re-scan to be sure? Or just use state if sync... state is async. 
+            // Better re-run logic locally
+            const priced = currentIssues.map(issue => {
+                const r = parsed.find(rec => rec.id === issue.record_id);
+                if (!r) return issue;
+                const loss = calculateImpact(r, issue.issue_type);
+                return { ...issue, estimated_loss_usd: loss };
             });
-        }
 
-        // 3 Duplicates from existing
-        if (chaosData.length > 3) {
-            chaosData.push({ ...chaosData[0], id: 'chaos_dupe_1', domain: chaosData[0].domain });
-            chaosData.push({ ...chaosData[1], id: 'chaos_dupe_2', domain: chaosData[1].domain });
-            chaosData.push({ ...chaosData[2], id: 'chaos_dupe_3', domain: chaosData[2].domain });
-        }
-
-        // 2 Stale Opps
-        chaosData.push({
-            id: 'chaos_stale_1',
-            type: 'opp',
-            name: 'Stale Whale Deal',
-            email: 'whale@ocean.com',
-            domain: 'ocean.com',
-            company: 'Ocean Corp',
-            source: 'outbound',
-            region: 'NA',
-            owner: 'Bob',
-            stage: 'Proposal',
-            created_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-            last_touch_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 15).toISOString(), // 15 days ago
-            next_step: 'Waiting',
-            value_usd: 80000,
-            notes: 'Chaos injected'
-        });
-        chaosData.push({
-            id: 'chaos_stale_2',
-            type: 'opp',
-            name: 'Forgotten Renewals',
-            email: 'old@legacy.com',
-            domain: 'legacy.com',
-            company: 'Legacy Inc',
-            source: 'upsell',
-            region: 'EMEA',
-            owner: 'Alice',
-            stage: 'Negotiation',
-            created_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-            last_touch_at: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 10).toISOString(), // 10 days ago
-            next_step: 'Contract sent',
-            value_usd: 12000,
-            notes: 'Chaos injected'
-        });
-
-        setData(chaosData);
-        alert('🔥 Chaos Injected! Run scan to see the damage.');
-        setIssues([]); // Reset scan
-        setReliability(null);
-    };
-
-    const handleScan = () => {
-        let foundIssues = scanForLeaks(data);
-        foundIssues = estimateImpact(foundIssues, data);
-        setIssues(foundIssues);
-        setReliability(calculateReliabilityMetrics(data));
-    };
-
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const csv = event.target?.result as string;
-            const parsed = parseCSV(csv);
-            setData(parsed);
-            setIssues([]);
-            setReliability(null);
-        };
-        reader.readAsText(file);
+            const biggest = priced.sort((a, b) => b.estimated_loss_usd - a.estimated_loss_usd)[0];
+            if (biggest) {
+                const record = parsed.find(r => r.id === biggest.record_id);
+                if (record) {
+                    setSelectedIssueId(biggest.issue_id);
+                    IncidentManager.addEvent('MANUAL_NOTE', `identified top issue: ${biggest.issue_type} on ${record.name}`);
+                }
+            }
+        }, 1000);
     };
 
     const handleRunFix = async (pack: FixPack) => {
@@ -173,289 +120,131 @@ export default function Home() {
                 })
             });
             const json = await res.json();
-            if (!json.success && json.error) {
-                alert(`Live Action Note: ${json.error}. (Fix will still be applied locally)`);
-            } else if (json.success) {
-                alert('Success! Slack alert sent to #revenue-alerts.');
+            if (json.success) {
+                // alert('Slack alert sent!');
+                IncidentManager.addEvent('MANUAL_NOTE', 'Slack Alert Sent to #revenue-reliability');
+            } else {
+                IncidentManager.addEvent('MANUAL_NOTE', 'Simulated Slack Alert (Env var missing)');
             }
         } catch (e) {
-            console.error(e);
+            IncidentManager.addEvent('MANUAL_NOTE', 'Simulated Slack Alert (Network error)');
         }
 
-        // 2. Apply Fix Locally to Demo "After" State
-        const issue = issues.find(i => i.issue_id === selectedIssueId);
-        if (issue) {
-            const newData = data.map(r => {
-                if (r.id !== issue.record_id) return r;
+        // 2. Apply Fix Locally (Values Update)
+        const { updatedRecords, appliedActionSummary } = applyFixPack(data, pack);
 
-                const copy = { ...r };
-                if (issue.issue_type === 'SLA_BREACH_UNTOUCHED') {
-                    copy.last_touch_at = new Date().toISOString();
-                    copy.owner = copy.owner || 'Antigravity (You)';
-                } else if (issue.issue_type === 'UNASSIGNED_OWNER') {
-                    copy.owner = 'Antigravity (You)';
-                } else if (issue.issue_type === 'STALE_OPP') {
-                    copy.last_touch_at = new Date().toISOString();
-                    copy.notes = (copy.notes || '') + ' [Rescued]';
-                } else if (issue.issue_type === 'DUPLICATE_SUSPECT') {
-                    copy.notes = (copy.notes || '') + ' [Merged]';
-                    return null;
-                } else if (issue.issue_type === 'NO_NEXT_STEP') {
-                    copy.next_step = 'Follow up task created';
-                }
-                return copy;
-            }).filter(Boolean) as FunnelRecord[];
+        setData(updatedRecords);
+        runAnalysis(updatedRecords);
 
-            setData(newData);
+        logAuditEvent('APPLY_FIX', appliedActionSummary, pack.fix_id);
 
-            // Re-scan to update UI
-            setTimeout(() => {
-                const foundIssues = scanForLeaks(newData);
-                const pricedIssues = estimateImpact(foundIssues, newData);
-                setIssues(pricedIssues);
-                setReliability(calculateReliabilityMetrics(newData));
-                setSelectedIssueId(null);
-            }, 500);
-        }
+        // Close drawer
+        setSelectedIssueId(null);
+        setDemoActive(false); // End demo sequence state
     };
 
-    const totalAtRisk = issues.reduce((acc, curr) => acc + (curr.estimated_loss_usd || 0), 0);
-    const highSevCount = issues.filter(i => i.severity_label === 'high').length;
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const csv = event.target?.result as string;
+            const parsed = parseCSV(csv);
+            setData(parsed);
+            runAnalysis(parsed);
+        };
+        reader.readAsText(file);
+    };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8 font-sans">
-            <header className="mb-8 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-indigo-700">
-                    <div className="bg-indigo-100 p-2 rounded-lg">
-                        <AlertTriangle size={24} className="text-indigo-600" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Revenue Leak SRE</h1>
-                        <p className="text-xs text-indigo-600 font-medium tracking-wide uppercase">GTM Stack Doctor</p>
-                    </div>
-                </div>
-                <div className="flex gap-4">
-                    <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors">
-                        <Upload size={16} />
-                        Upload CSV
-                        <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
-                    </label>
-                    <button
-                        onClick={handleLoadSample}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md shadow-sm hover:bg-indigo-700 text-sm font-medium transition-colors"
-                    >
-                        <Database size={16} />
-                        Load Messy Funnel
-                    </button>
-                    <button
-                        onClick={handleRunFullDemo}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md shadow-sm hover:bg-purple-700 text-sm font-medium transition-colors border border-purple-500"
-                    >
-                        <PlayCircle size={16} />
-                        Run Full Demo
-                    </button>
-                    {data.length > 0 && (
-                        <button
-                            onClick={handleInjectChaos}
-                            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md shadow-sm hover:bg-orange-700 text-sm font-medium transition-colors"
-                        >
-                            <Zap size={16} />
-                            Inject Chaos
-                        </button>
-                    )}
-                </div>
-            </header>
-
-            <main>
-                {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-sm font-medium text-gray-500">Leaks Detected</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-2">{issues.length}</p>
-                    </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-sm font-medium text-gray-500">Revenue at Risk</p>
-                        <p className="text-3xl font-bold text-rose-600 mt-2">
-                            ${totalAtRisk.toLocaleString()}
-                        </p>
-                    </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-sm font-medium text-gray-500">High Severity Issues</p>
-                        <p className="text-3xl font-bold text-orange-600 mt-2">{highSevCount}</p>
-                    </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <p className="text-sm font-medium text-gray-500">Est. Recoverable</p>
-                        <p className="text-3xl font-bold text-green-600 mt-2">
-                            ${Math.round(totalAtRisk * 0.4).toLocaleString()}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Revenue Reliability Section */}
-                {reliability && (
-                    <div className="mb-8">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Activity className="text-indigo-600" />
-                            <h2 className="text-xl font-bold text-gray-900">Revenue Reliability & Error Budget</h2>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Error Budget Card */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="font-semibold text-gray-700">Monthly Error Budget</h3>
-                                    <span className={`text-sm font-bold px-2 py-1 rounded ${reliability.error_budget_remaining > 0.2 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                        {Math.round(reliability.error_budget_remaining * 100)}% Remaining
-                                    </span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
-                                    <div
-                                        className={`h-4 rounded-full transition-all duration-500 ${reliability.error_budget_remaining > 0.2 ? 'bg-green-500' : 'bg-red-500'}`}
-                                        style={{ width: `${reliability.error_budget_remaining * 100}%` }}
-                                    ></div>
-                                </div>
-                                <p className="text-xs text-gray-500">Based on 90% SLA Target across all funnel stages.</p>
-
-                                <div className="mt-6 space-y-3">
-                                    <div>
-                                        <div className="flex justify-between text-sm mb-1">
-                                            <span>Lead Response SLO (1hr)</span>
-                                            <span>{Math.round(reliability.lead_slo_compliance_rate * 100)}%</span>
-                                        </div>
-                                        <div className="w-full bg-gray-100 rounded-full h-2">
-                                            <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${reliability.lead_slo_compliance_rate * 100}%` }}></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between text-sm mb-1">
-                                            <span>Opp Freshness SLO (10d)</span>
-                                            <span>{Math.round(reliability.opp_freshness_compliance_rate * 100)}%</span>
-                                        </div>
-                                        <div className="w-full bg-gray-100 rounded-full h-2">
-                                            <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${reliability.opp_freshness_compliance_rate * 100}%` }}></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Top Breaches Card */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                                <h3 className="font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                                    <TrendingDown size={18} /> Top 5 Revenue Breaches
-                                </h3>
-                                <div className="space-y-3">
-                                    {reliability.top_breaches.length === 0 ? (
-                                        <p className="text-sm text-gray-500 italic">No significant breaches found.</p>
-                                    ) : (
-                                        reliability.top_breaches.map(b => (
-                                            <div key={b.id} className="flex justify-between items-center border-b border-gray-50 pb-2 last:border-0">
-                                                <div>
-                                                    <p className="font-medium text-sm text-gray-900">{b.name}</p>
-                                                    <p className="text-xs text-rose-600">{b.reason}</p>
-                                                </div>
-                                                <div className="text-sm font-bold text-gray-700">
-                                                    -${b.dollar_impact.toLocaleString()}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
+        <div className="min-h-screen bg-gray-50 font-sans">
+            {/* War Room Header if Incident Active */}
+            {incident && incident.status === 'open' && (
+                <div className="bg-gray-900 border-b-4 border-red-600 p-4 sticky top-0 z-40 shadow-2xl">
+                    <div className="max-w-7xl mx-auto flex justify-between items-center text-white">
+                        <div className="flex items-center gap-3">
+                            <Siren className="text-red-500 animate-pulse" size={32} />
+                            <div>
+                                <h1 className="text-2xl font-black tracking-tighter uppercase">War Room</h1>
+                                <p className="text-xs font-mono text-red-400">INCIDENT ACTIVE • REVENUE AT RISK</p>
                             </div>
                         </div>
-                    </div>
-                )}
-
-                {/* Audit Log Panel */}
-                {reliability && (
-                    <div className="mb-8 bg-slate-800 rounded-xl shadow-lg border border-slate-700 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-700 flex items-center gap-2">
-                            <History className="text-slate-400" />
-                            <h2 className="text-lg font-bold text-slate-100">System Audit Log</h2>
-                        </div>
-                        <div className="p-0 max-h-60 overflow-y-auto">
-                            <table className="w-full text-left text-sm text-slate-300">
-                                <thead className="bg-slate-900/50 text-slate-400 font-medium font-mono text-xs uppercase sticky top-0 backdrop-blur-sm">
-                                    <tr>
-                                        <th className="px-6 py-3">Timestamp</th>
-                                        <th className="px-6 py-3">User</th>
-                                        <th className="px-6 py-3">Action</th>
-                                        <th className="px-6 py-3">Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-700">
-                                    {getAuditLog().length === 0 ? (
-                                        <tr>
-                                            <td colSpan={4} className="px-6 py-8 text-center text-slate-500 italic">No actions recorded yet.</td>
-                                        </tr>
-                                    ) : (
-                                        getAuditLog().map(log => (
-                                            <tr key={log.id} className="hover:bg-slate-700/50 transition-colors">
-                                                <td className="px-6 py-3 font-mono text-xs text-slate-500">{new Date(log.timestamp).toLocaleTimeString()}</td>
-                                                <td className="px-6 py-3">{log.user}</td>
-                                                <td className="px-6 py-3 font-bold text-emerald-400">{log.action}</td>
-                                                <td className="px-6 py-3 text-slate-300">{log.details}</td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {data.length === 0 ? (
-                    <div className="text-center py-24 bg-white rounded-xl shadow-sm border border-dashed border-gray-300">
-                        <h3 className="text-lg font-medium text-gray-900">No Data Loaded</h3>
-                        <p className="text-gray-500 mt-1">Upload a CSV or load sample data to start scanning for leaks.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        {/* Actions Bar */}
-                        <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                            <div className="text-sm text-gray-500">
-                                Loaded <strong>{data.length}</strong> records
+                        <div className="flex items-center gap-6">
+                            <div className="text-right">
+                                <p className="text-xs text-gray-500 font-bold uppercase">Burn Rate</p>
+                                <p className={`text-xl font-mono font-bold ${incident.burn_rate > 1 ? 'text-red-500' : 'text-yellow-500'}`}>
+                                    {(incident.burn_rate * 100).toFixed(1)}%
+                                </p>
                             </div>
-                            <button
-                                onClick={handleScan}
-                                className="flex items-center gap-2 px-6 py-2 bg-rose-600 text-white rounded-md shadow-sm hover:bg-rose-700 font-medium"
-                            >
-                                <ShieldAlert size={18} />
-                                Scan for Leaks
+                            <div className="text-right">
+                                <p className="text-xs text-gray-500 font-bold uppercase">Budget Left</p>
+                                <p className="text-xl font-mono font-bold">
+                                    ${Math.max(0, incident.error_budget_usd - incident.total_at_risk_usd).toLocaleString()}
+                                </p>
+                            </div>
+                            <button onClick={handleRunFullDemo} className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded font-bold uppercase text-sm tracking-widest shadow-lg transition-transform active:scale-95">
+                                Restart Demo
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
 
-                        {issues.length > 0 && (
-                            <div className="bg-rose-50 p-6 rounded-xl shadow-sm border border-rose-200">
-                                <h2 className="text-xl font-bold text-rose-900 mb-4 flex items-center gap-2">
-                                    <AlertTriangle />
-                                    {issues.length} Leaks Detected
-                                </h2>
-                                <div className="grid gap-4">
-                                    {issues.map(issue => (
-                                        <div
-                                            key={issue.issue_id}
-                                            onClick={() => setSelectedIssueId(issue.issue_id)}
-                                            className="bg-white p-4 rounded-lg border border-rose-100 flex justify-between items-center group hover:shadow-md transition-shadow cursor-pointer hover:border-rose-300"
-                                        >
-                                            <div>
-                                                <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800 mb-1">
-                                                    {issue.issue_type}
-                                                </span>
-                                                <p className="text-gray-900 font-medium">{issue.explanation}</p>
-                                                <p className="text-xs text-gray-500">Record ID: {issue.record_id}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-sm font-bold text-rose-600">-${issue.estimated_loss_usd.toLocaleString()}</div>
-                                                <div className="text-xs text-gray-500 mt-1 font-bold">{issue.severity_label.toUpperCase()}</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+            <div className="max-w-7xl mx-auto p-8">
+                {/* Standard Header (only if no incident or scrolled) */}
+                {(!incident || incident.status !== 'open') && (
+                    <header className="mb-8 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-indigo-700">
+                            <div className="bg-indigo-100 p-2 rounded-lg">
+                                <AlertTriangle size={24} className="text-indigo-600" />
                             </div>
-                        )}
+                            <div>
+                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">Revenue Leak SRE</h1>
+                                <p className="text-xs text-indigo-600 font-medium tracking-wide uppercase">GTM Stack Doctor</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors">
+                                <Upload size={16} />
+                                Upload CSV
+                                <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
+                            </label>
+                            <button
+                                onClick={handleRunFullDemo}
+                                className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-md shadow-lg hover:bg-purple-700 text-sm font-bold transition-all border border-purple-500 animate-pulse"
+                            >
+                                <PlayCircle size={18} />
+                                RUN FULL DEMO
+                            </button>
+                        </div>
+                    </header>
+                )}
 
+                {incident && incident.status === 'open' && (
+                    <div className="grid grid-cols-12 gap-6 mb-12">
+                        <div className="col-span-8">
+                            <IncidentHeader incident={incident} />
+                            <div className="grid grid-cols-2 gap-6">
+                                <TopCausesWidget causes={incident.top_causes} />
+                                <AffectedSegmentsWidget segments={incident.affected_segments} />
+                            </div>
+                        </div>
+                        <div className="col-span-4 space-y-6">
+                            <ErrorBudgetWidget incident={incident} />
+                            <TimelinePanel events={timeline} />
+                        </div>
+                    </div>
+                )}
+
+                {/* Legacy Dashboard View (for detailed record inspection) */}
+                {data.length > 0 && (
+                    <div className="space-y-6">
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Record Data</h2>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-lg font-semibold text-gray-900">Live Funnel Data</h2>
+                                <span className="text-sm text-gray-500">{data.length} records loaded</span>
+                            </div>
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                                     <thead className="bg-gray-50">
@@ -464,33 +253,40 @@ export default function Home() {
                                             <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                             <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Stage</th>
                                             <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                                            <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Last Touch</th>
+                                            <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Touch</th>
+                                            <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Details</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {data.slice(0, 10).map((row) => (
-                                            <tr key={row.id}>
+                                            <tr key={row.id} className={issues.find(i => i.record_id === row.id) ? 'bg-red-50' : ''}>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${row.type === 'lead' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
                                                         {row.type}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{row.name}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900 flex flex-col">
+                                                    <span>{row.name}</span>
+                                                    <span className="text-xs text-gray-400">{row.company}</span>
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-500">{row.stage}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-500">${row.value_usd?.toLocaleString()}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                                                     {row.last_touch_at ? new Date(row.last_touch_at).toLocaleDateString() : 'Never'}
                                                 </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                                                    <span className="text-xs truncate max-w-[150px] inline-block">{row.notes}</span>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
-                                <p className="px-6 py-4 text-xs text-gray-400">Showing first 10 records...</p>
+                                {data.length > 10 && <p className="px-6 py-4 text-xs text-gray-400">Showing first 10 of {data.length} records...</p>}
                             </div>
                         </div>
                     </div>
                 )}
-            </main>
+            </div>
 
             <IssueDrawer
                 issue={selectedIssue}
